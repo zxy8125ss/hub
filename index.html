@@ -31,7 +31,7 @@ body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-fo
 .wrap{max-width:720px;margin:0 auto;position:relative}
 .blob{position:absolute;z-index:0;pointer-events:none;opacity:.55}
 .blob.a{top:-60px;right:-90px;width:260px} .blob.b{top:190px;left:-120px;width:220px}
-.wrap>*{position:relative;z-index:1}
+.wrap>*:not(.blob){position:relative;z-index:1}
 button{font:inherit;cursor:pointer;color:inherit}
 a{color:var(--teal)}
 :focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:8px}
@@ -493,7 +493,7 @@ function card(a){
   const open = openSet.has(a.repo);
   const icon = a.site && a.site.icon ? `<img src="${esc(a.site.icon)}" alt="" onerror="this.remove()">` : '';
   const strip = a.strip.length ? `<div class="strip" aria-label="近 14 天运行记录">${a.strip.map(x => `<i class="${x.c} ${x.s ? 's' : 'p'}" title="${esc(x.n)} ${clock(x.t)}"></i>`).join('')}</div>
-    <div class="striplabel"><span>${a.strip.length ? clock(a.strip[0].t).split(' ')[0] : ''}</span><span>近 14 天 ${a.strip.length} 次运行 · 高条为定时</span><span>今天</span></div>` : '';
+    <div class="striplabel"><span>${a.strip.length ? clock(a.strip[0].t).split(' ')[0] : ''}</span><span>最近 ${a.strip.length} 次运行 · 高条为定时</span><span>今天</span></div>` : '';
   const rate = a.week ? Math.round(a.weekOk / a.week * 100) + '%' : '—';
   const site = a.site ? (a.site.up ? `${a.site.ms} ms` : '打不开') : '—';
   const kv = `<div class="kv">
