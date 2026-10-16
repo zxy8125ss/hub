@@ -24,13 +24,13 @@
   --muted:#a69d8f; --line:#35423b; --track:#34413a;
   --ok:#7CC89E; --okbg:#21402F; --warn:#E6B45F; --warnbg:#45381F; --bad:#F2907C; --badbg:#4B2A24; --idle:#8f877b; --idlebg:#2E3732; color-scheme:dark}}
 *{box-sizing:border-box}
-html,body{margin:0}
+html,body{margin:0;overflow-x:hidden}
 body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased;
   padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(36px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
   overflow-x:hidden}
-.wrap{max-width:720px;margin:0 auto;position:relative}
+.wrap{max-width:720px;margin:0 auto;position:relative;overflow-x:clip}
 .blob{position:absolute;z-index:0;pointer-events:none;opacity:.55}
-.blob.a{top:-60px;right:-90px;width:260px} .blob.b{top:190px;left:-120px;width:220px}
+.blob.a{top:-50px;right:-40px;width:200px} .blob.b{top:200px;left:-60px;width:160px}
 .wrap>*:not(.blob){position:relative;z-index:1}
 button{font:inherit;cursor:pointer;color:inherit}
 a{color:var(--teal)}
@@ -59,7 +59,7 @@ h1{font:600 25px/1.2 var(--serif);margin:0;letter-spacing:.03em}
 .stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .stat{background:var(--sand);border-radius:18px;padding:10px 12px;min-width:0}
 .stat b{font:600 19px/1.2 var(--serif);display:block;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stat span{font-size:11.5px;color:var(--muted)}
+.stat span{font-size:11.5px;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:420px){.hero{grid-template-columns:1fr;justify-items:center;text-align:center}.ring{width:120px;height:120px}}
 
 .note{background:var(--warnbg);color:var(--warn);border-radius:16px;padding:10px 14px;font-size:13px;margin-top:12px}
@@ -220,7 +220,7 @@ function ago(t){
 function until(t){
   const m = Math.round((new Date(t) - Date.now()) / 60000);
   if (m < 60) return m + ' 分钟后'; const h = Math.floor(m/60);
-  return h + ' 小时' + (m%60 ? (m%60) + ' 分' : '') + '后';
+  return h + ' 小时' + (m%60 ? ' ' + (m%60) + ' 分钟' : '') + '后';
 }
 const fmt = (t, o) => new Date(t).toLocaleString('zh-CN', {timeZone:'Asia/Shanghai', hour12:false, ...o});
 const clock = t => fmt(t, {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
@@ -439,7 +439,7 @@ function render(){
   const bad = apps.filter(a => a.state === 'bad'), warn = apps.filter(a => a.state === 'warn');
   const wk = apps.reduce((s, a) => s + a.week, 0), wkOk = apps.reduce((s, a) => s + a.weekOk, 0);
   const rate = wk ? Math.round(wkOk / wk * 100) : 100;
-  const col = bad.length ? 'var(--bad)' : warn.length ? 'var(--warn)' : 'var(--ok)';
+  const col = rate >= 95 ? 'var(--ok)' : rate >= 80 ? 'var(--warn)' : 'var(--bad)';
   const C = 2 * Math.PI * 50;
   $('#ring').innerHTML = `<svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="none" stroke="var(--track)" stroke-width="12"/><circle cx="60" cy="60" r="50" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C * rate / 100} ${C}"/></svg><div class="num"><b>${rate}%</b><small>7 天成功率</small></div>`;
   const v = $('#verdict');
@@ -450,9 +450,9 @@ function render(){
   const today = apps.reduce((s, a) => s + a.today, 0);
   const fails = apps.reduce((s, a) => s + a.strip.filter(x => x.c === 'bad' && bjDate(x.t) === bjDate(Date.now())).length, 0);
   $('#stats').innerHTML = `
-    <div class="stat"><b>${today}</b><span>今天运行次数</span></div>
-    <div class="stat"><b style="color:${fails ? 'var(--bad)' : 'inherit'}">${fails}</b><span>今天失败次数</span></div>
-    <div class="stat"><b>${next ? hm(next.t) : '—'}</b><span>${next ? '下次：' + esc(next.a.title) : '下次任务'}</span></div>`;
+    <div class="stat"><b>${today}</b><span>今天运行</span></div>
+    <div class="stat"><b style="color:${fails ? 'var(--bad)' : 'inherit'}">${fails}</b><span>今天失败</span></div>
+    <div class="stat"><b>${next ? hm(next.t) : '—'}</b><span>${next ? '下次 · ' + esc(next.a.title) : '下次任务'}</span></div>`;
   $('#when').textContent = `检查于 ${clock(current.at)}（${ago(current.at)}）`;
   try { if (navigator.setAppBadge) (bad.length + warn.length) ? navigator.setAppBadge(bad.length + warn.length) : navigator.clearAppBadge(); } catch (e) {}
 
