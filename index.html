@@ -184,6 +184,18 @@ footer{margin-top:26px;color:var(--muted);font-size:12px;display:grid;gap:8px;ju
 </div>
 
 <script>
+const BUILD = '2026-10-16-2235';
+// 自动更新：线上版本号和当前页面不同就刷新一次（GitHub Pages 会缓存页面 10 分钟，手机主屏幕 App 也会缓存）
+(async () => {
+  try {
+    const r = await fetch('version.json?t=' + Date.now(), {cache:'no-store'});
+    const v = (await r.json()).build;
+    if (v && v !== BUILD && sessionStorage.getItem('hub-reloaded') !== v) {
+      sessionStorage.setItem('hub-reloaded', v);
+      location.replace(location.pathname + '?v=' + v);
+    }
+  } catch (e) {}
+})();
 const OWNER = 'zxy8125ss';
 const SELF = 'hub';
 const SITE = `https://${OWNER}.github.io/`;
