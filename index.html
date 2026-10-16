@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>应用总控台</title>
+<meta name="theme-color" content="#F2EADF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="总控台">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+/* 布局：顶部一句总结 + 按状态排序的 App 卡片列表，红黄在前 */
+:root{
+  --bg:#F2EADF; --card:#FBF6EE; --sand:#E7DCCB; --ink:#29473A; --brown:#7A5233; --teal:#2A9D8F;
+  --muted:#7d7466; --line:#ddd0bc;
+  --ok:#2E7D5B; --okbg:#DCEBDF; --warn:#A86A12; --warnbg:#F6E5C6; --bad:#B3402E; --badbg:#F5D7CF; --idle:#8a8174; --idlebg:#E9E1D4;
+  --serif:"Noto Serif SC","Songti SC","STSong",serif; --sans:"Noto Sans SC","PingFang SC",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1C2420; --card:#25302A; --sand:#2F3B34; --ink:#E9E0D2; --brown:#D3A97F; --teal:#5CC2B5;
+  --muted:#a59c8e; --line:#3a463f;
+  --ok:#7CC89E; --okbg:#24402F; --warn:#E3B05C; --warnbg:#45381F; --bad:#F08A76; --badbg:#4A2A24; --idle:#a59c8e; --idlebg:#2F3833; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased;
+  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:680px;margin:0 auto}
+header{padding:22px 0 14px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font:600 26px/1.2 var(--serif);margin:0;letter-spacing:.02em}
+.sub{color:var(--muted);font-size:13px;margin-top:4px}
+button{font:inherit;cursor:pointer}
+#refresh{border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:10px 18px;font-weight:600;white-space:nowrap}
+#refresh:disabled{opacity:.55}
+#refresh:focus-visible,a:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.summary{border-radius:24px;padding:18px 20px;margin-bottom:16px;display:flex;gap:14px;align-items:center}
+.summary.ok{background:var(--okbg);color:var(--ok)} .summary.warn{background:var(--warnbg);color:var(--warn)} .summary.bad{background:var(--badbg);color:var(--bad)} .summary.idle{background:var(--sand);color:var(--muted)}
+.summary b{font:600 20px/1.3 var(--serif);display:block}
+.summary span{font-size:13px;opacity:.9}
+.dot{width:14px;height:14px;border-radius:50%;background:currentColor;flex:none;box-shadow:0 0 0 5px color-mix(in srgb,currentColor 18%,transparent)}
+.note{background:var(--sand);border-radius:16px;padding:10px 14px;font-size:13px;color:var(--brown);margin-bottom:14px}
+.list{display:grid;gap:12px}
+.app{background:var(--card);border-radius:22px;padding:16px 18px;border:1px solid var(--line)}
+.app.bad{border-color:var(--bad);box-shadow:inset 4px 0 0 var(--bad)}
+.app.warn{box-shadow:inset 4px 0 0 var(--warn)}
+.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.name{font:600 18px/1.3 var(--serif);flex:1;min-width:0}
+.pill{font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.pill.ok{background:var(--okbg);color:var(--ok)} .pill.warn{background:var(--warnbg);color:var(--warn)} .pill.bad{background:var(--badbg);color:var(--bad)} .pill.idle{background:var(--idlebg);color:var(--idle)}
+.meta{color:var(--muted);font-size:12.5px;margin-top:2px}
+.jobs{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.jobs li{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:baseline;font-size:13.5px}
+.jobs li i{width:8px;height:8px;border-radius:50%;display:block;transform:translateY(-1px)}
+.jobs .jn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jobs .jt{color:var(--muted);font-variant-numeric:tabular-nums;font-size:12.5px;white-space:nowrap}
+.jobs .why{grid-column:2/4;color:var(--bad);font-size:12.5px;margin-top:-4px}
+.jobs .why.w{color:var(--warn)}
+.c-ok{background:var(--ok)} .c-bad{background:var(--bad)} .c-warn{background:var(--warn)} .c-idle{background:var(--idle)}
+.links{display:flex;gap:16px;margin-top:12px;font-size:13px}
+.links a{color:var(--teal);text-decoration:none;font-weight:600}
+footer{color:var(--muted);font-size:12px;text-align:center;margin-top:22px}
+.skeleton{height:96px;border-radius:22px;background:var(--sand);opacity:.6}
+@media (prefers-reduced-motion:no-preference){#refresh.spin::after{content:"…"}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>应用总控台</h1><div class="sub" id="when">正在检查…</div></div>
+    <button id="refresh" type="button">检查</button>
+  </header>
+  <div id="summary" class="summary idle"><div class="dot"></div><div><b>正在检查各 App</b><span>从 GitHub 读取自动任务记录</span></div></div>
+  <div id="note" class="note" hidden></div>
+  <div id="list" class="list"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+  <footer id="foot">新仓库只要开了 GitHub Pages，会自动出现在这里</footer>
+</div>
+<script>
+const OWNER = 'zxy8125ss';
+const SELF = 'hub';
+// 已知 App 的中文名与定时任务的最长允许间隔（小时）。新仓库不用登记，开了 Pages 就会自动出现。
+const KNOWN = {
+  'game-on':   {name:'Game On', desc:'比赛日程', maxGap:{'更新赛程':8}},
+  'life-radar':{name:'生活雷达', desc:'每日信息核查'},
+  'fund-diary':{name:'基金日记', desc:'预测与复盘'},
+  'forge':     {name:'Forge', desc:'习惯与时间'},
+  'leader-party-newchina':{name:'领袖·政党·新中国', desc:'历史时间轴'},
+  'crosscheck':{name:'Crosscheck', desc:'人生指南对照'},
+  'ease':      {name:'Ease', desc:'体重管理'}
+};
+const DEFAULT_GAP = 27;           // 每日任务超过 27 小时没跑就提醒
+const CACHE_KEY = 'hub-cache-v1';
+const STALE_MIN = 5;              // 打开时缓存超过 5 分钟自动重新检查
+const BAD = ['failure','timed_out','startup_failure','action_required'];
+const IGNORE = ['cancelled','skipped','neutral','stale'];
+const JOBNAME = {'pages build and deployment':'发布网页','Deploy to gh-pages':'发布网页'};
+const RANK = {bad:0,warn:1,ok:2,idle:3};
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function ago(t){
+  const m = Math.round((Date.now() - new Date(t)) / 60000);
+  if (m < 1) return '刚刚';
+  if (m < 60) return m + ' 分钟前';
+  const h = Math.round(m / 60);
+  if (h < 48) return h + ' 小时前';
+  return Math.round(h / 24) + ' 天前';
+}
+function clock(t){
+  return new Date(t).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+}
+let rateLeft = null, rateReset = null;
+async function gh(path){
+  const r = await fetch('https://api.github.com' + path, {headers:{Accept:'application/vnd.github+json'}});
+  const left = r.headers.get('x-ratelimit-remaining'); if (left !== null) rateLeft = +left;
+  const reset = r.headers.get('x-ratelimit-reset'); if (reset) rateReset = +reset * 1000;
+  if (r.status === 403 || r.status === 429) { const e = new Error('rate'); e.rate = true; throw e; }
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+// 判断一个仓库的状态
+function judge(repo, runs){
+  const key = repo.name.toLowerCase();
+  const known = KNOWN[key] || {};
+  const byWf = new Map();
+  for (const run of runs) {               // runs 按时间倒序
+    const k = run.workflow_id;
+    if (!byWf.has(k)) byWf.set(k, {name: JOBNAME[run.name] || run.name, runs: []});
+    byWf.get(k).runs.push(run);
+  }
+  const jobs = [];
+  for (const wf of byWf.values()) {
+    const latest = wf.runs[0];
+    const done = wf.runs.find(r => r.status === 'completed' && !IGNORE.includes(r.conclusion));
+    const sched = wf.runs.find(r => r.event === 'schedule');
+    let state = 'ok', why = '';
+    if (done && BAD.includes(done.conclusion)) {
+      state = 'bad';
+      const fails = wf.runs.filter(r => r.status === 'completed' && !IGNORE.includes(r.conclusion));
+      let n = 0; for (const r of fails) { if (BAD.includes(r.conclusion)) n++; else break; }
+      why = n > 1 ? `连续失败 ${n} 次` : '最近一次运行失败';
+    } else if (!done) {
+      state = latest && latest.status !== 'completed' ? 'warn' : 'idle';
+    }
+    if (sched && state !== 'bad') {
+      const gap = (known.maxGap && known.maxGap[wf.name]) || DEFAULT_GAP;
+      const hrs = (Date.now() - new Date(sched.created_at)) / 3600000;
+      if (hrs > gap) { state = 'warn'; why = `定时任务 ${Math.floor(hrs)} 小时没跑了`; }
+    }
+    if (latest && latest.status !== 'completed' && state === 'ok') why = '正在运行';
+    const shown = (state === 'bad' ? done : latest) || latest;
+    jobs.push({name: wf.name, state, why, time: shown.created_at, url: shown.html_url, scheduled: !!sched});
+  }
+  jobs.sort((a, b) => RANK[a.state] - RANK[b.state] || b.scheduled - a.scheduled);
+  let state = jobs.length ? jobs.reduce((s, j) => RANK[j.state] < RANK[s] ? j.state : s, 'ok') : 'idle';
+  if (state === 'idle' && jobs.length) state = 'ok';
+  return {
+    repo: repo.name, title: known.name || repo.name, desc: known.desc || repo.description || '',
+    url: repo.homepage || `https://${OWNER}.github.io/${repo.name}/`,
+    actions: `https://github.com/${OWNER}/${repo.name}/actions`,
+    pushed: repo.pushed_at, state, jobs, auto: jobs.some(j => j.scheduled)
+  };
+}
+
+async function check(){
+  const btn = $('#refresh'); btn.disabled = true; btn.textContent = '检查中'; btn.classList.add('spin');
+  try {
+    const repos = (await gh(`/users/${OWNER}/repos?per_page=100&sort=pushed`))
+      .filter(r => r.name.toLowerCase() !== SELF && !r.fork && !r.archived && (r.has_pages || KNOWN[r.name.toLowerCase()]));
+    const apps = await Promise.all(repos.map(async r => {
+      try { const d = await gh(`/repos/${OWNER}/${r.name}/actions/runs?per_page=60`); return judge(r, d.workflow_runs || []); }
+      catch (e) { if (e.rate) throw e; return {...judge(r, []), state:'warn', jobs:[{name:'读取记录', state:'warn', why:'这次没读到，稍后再检查', time:null}]}; }
+    }));
+    const data = {at: Date.now(), apps};
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch (e) {}
+    render(data); $('#note').hidden = true;
+  } catch (e) {
+    const note = $('#note'); note.hidden = false;
+    if (e.rate) {
+      const min = rateReset ? Math.max(1, Math.ceil((rateReset - Date.now()) / 60000)) : 60;
+      note.textContent = `GitHub 每小时的免费查询次数用完了，约 ${min} 分钟后恢复。下面是上次的结果。`;
+    } else {
+      note.textContent = '连不上 GitHub，检查一下网络。下面是上次的结果。';
+    }
+  } finally {
+    btn.disabled = false; btn.textContent = '检查'; btn.classList.remove('spin');
+  }
+}
+
+function render(data){
+  const apps = [...data.apps].sort((a, b) => RANK[a.state] - RANK[b.state] || b.auto - a.auto || new Date(b.pushed) - new Date(a.pushed));
+  const bad = apps.filter(a => a.state === 'bad'), warn = apps.filter(a => a.state === 'warn');
+  const s = $('#summary');
+  if (bad.length) { s.className = 'summary bad'; s.innerHTML = `<div class="dot"></div><div><b>${bad.length} 个 App 出问题了</b><span>${esc(bad.map(a => a.title).join('、'))}${warn.length ? '；另有 ' + warn.length + ' 个需留意' : ''}</span></div>`; }
+  else if (warn.length) { s.className = 'summary warn'; s.innerHTML = `<div class="dot"></div><div><b>${warn.length} 个 App 需留意</b><span>${esc(warn.map(a => a.title).join('、'))}</span></div>`; }
+  else { s.className = 'summary ok'; s.innerHTML = `<div class="dot"></div><div><b>${apps.length} 个 App 全部正常</b><span>自动任务都按时跑完了</span></div>`; }
+  const label = {bad:'失败', warn:'留意', ok:'正常', idle:'无自动任务'};
+  $('#list').innerHTML = apps.map(a => `
+    <article class="app ${a.state}">
+      <div class="top"><div class="name">${esc(a.title)}</div><span class="pill ${a.state}">${label[a.state]}</span></div>
+      <div class="meta">${esc(a.desc)}${a.desc ? ' · ' : ''}数据最后更新 ${a.pushed ? ago(a.pushed) : '—'}</div>
+      ${a.jobs.length ? `<ul class="jobs">${a.jobs.map(j => `
+        <li><i class="c-${j.state}"></i><span class="jn">${esc(j.name)}${j.scheduled ? '（定时）' : ''}</span><span class="jt">${j.time ? clock(j.time) : ''}</span>
+        ${j.why ? `<span class="why ${j.state === 'bad' ? '' : 'w'}">${esc(j.why)}</span>` : ''}</li>`).join('')}</ul>` : ''}
+      <div class="links"><a href="${esc(a.url)}" target="_blank" rel="noopener">打开 App</a><a href="${esc(a.actions)}" target="_blank" rel="noopener">任务记录</a></div>
+    </article>`).join('');
+  $('#when').textContent = '检查于 ' + clock(data.at) + '（' + ago(data.at) + '）';
+  $('#foot').textContent = (rateLeft !== null ? `本小时还能检查约 ${Math.floor(rateLeft / (apps.length + 1))} 次 · ` : '') + '新仓库只要开了 GitHub Pages，会自动出现在这里';
+}
+
+$('#refresh').addEventListener('click', check);
+let cached = null;
+try { cached = JSON.parse(localStorage.getItem(CACHE_KEY)); } catch (e) {}
+if (cached && cached.apps) render(cached);
+if (!cached || Date.now() - cached.at > STALE_MIN * 60000) check();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  let c = null; try { c = JSON.parse(localStorage.getItem(CACHE_KEY)); } catch (e) {}
+  if (!c || Date.now() - c.at > STALE_MIN * 60000) check();
+});
+</script>
+</body>
+</html>
