@@ -323,6 +323,7 @@ const ADAPTERS = {
     const okDays = log.slice(0, 7).filter(x => x.ok).length;
     lines.push(`最近 ${Math.min(7, log.length)} 次更新成功 ${okDays} 次`);
     if (last.ok === false) warn.push('最近一次每日更新没有成功');
+    if (last.date === today && last.added != null && last.added < 10) warn.push(`今天只找到 ${last.added} 条，没达到每天 10 条`);
     if (r.last_daily !== today && bjHour >= 12) warn.push('今天的每日信息还没更新');
     return {lines, warn};
   },
