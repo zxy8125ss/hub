@@ -98,7 +98,7 @@ h2 small{font:12px var(--sans);color:var(--muted)}
 .app.warn .head{background:linear-gradient(90deg,var(--warnbg),transparent 70%)}
 .head{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;padding:16px 18px 10px;width:100%;border:0;background:none;text-align:left}
 .icon{width:48px;height:48px;border-radius:14px;background:var(--sand);display:flex;align-items:center;justify-content:center;font:600 18px var(--serif);color:var(--brown);overflow:hidden}
-.icon img{width:100%;height:100%;object-fit:cover}
+.icon{position:relative}.icon img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .title{min-width:0}
 .title b{font:600 17px/1.3 var(--serif);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .title span{font-size:12px;color:var(--muted)}
@@ -315,13 +315,13 @@ const ADAPTERS = {
   },
   async radar(url){
     const r = await getJSON(url + 'data/runs.json');
-    const last = (r.log || []).slice(-1)[0] || {};
+    const log = [...(r.log || [])].sort((a, b) => a.date < b.date ? 1 : -1), last = log[0] || {};
     const today = bjDate(Date.now()), lines = [], warn = [];
     const bjHour = new Date(Date.now() + BJ).getUTCHours();
     lines.push(`最近一次每日更新：${esc(r.last_daily)}${last.added != null ? ` · 新增 <b>${last.added}</b> 条` : ''}`);
     if (last.note) lines.push(esc(last.note));
-    const okDays = (r.log || []).slice(-7).filter(x => x.ok).length;
-    lines.push(`近 7 次更新成功 ${okDays} 次`);
+    const okDays = log.slice(0, 7).filter(x => x.ok).length;
+    lines.push(`最近 ${Math.min(7, log.length)} 次更新成功 ${okDays} 次`);
     if (last.ok === false) warn.push('最近一次每日更新没有成功');
     if (r.last_daily !== today && bjHour >= 12) warn.push('今天的每日信息还没更新');
     return {lines, warn};
@@ -451,7 +451,7 @@ function render(){
   $('#stats').innerHTML = `
     <div class="stat"><b>${today}</b><span>今天运行次数</span></div>
     <div class="stat"><b style="color:${fails ? 'var(--bad)' : 'inherit'}">${fails}</b><span>今天失败次数</span></div>
-    <div class="stat"><b>${next ? hm(next.t) : '—'}</b><span>${next ? esc(next.a.title) + ' 下次任务' : '下次任务'}</span></div>`;
+    <div class="stat"><b>${next ? hm(next.t) : '—'}</b><span>${next ? '下次：' + esc(next.a.title) : '下次任务'}</span></div>`;
   $('#when').textContent = `检查于 ${clock(current.at)}（${ago(current.at)}）`;
   try { if (navigator.setAppBadge) (bad.length + warn.length) ? navigator.setAppBadge(bad.length + warn.length) : navigator.clearAppBadge(); } catch (e) {}
 
