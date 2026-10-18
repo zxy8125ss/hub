@@ -1,0 +1,40 @@
+name: 状态检查
+on:
+  schedule:
+    - cron: '7,37 * * * *'      # 每 30 分钟
+  workflow_run:
+    workflows: ['每日备份']
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ['apps.json', 'scripts/status.mjs', '.github/workflows/status.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: status
+  cancel-in-progress: true
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 生成状态
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p out
+          node scripts/status.mjs > out/status.json
+          node -e "const s=require('./out/status.json');console.log(s.apps.length+' 个 App，剩余查询 '+s.rate_left)"
+      - name: 发布到 status 分支
+        run: |
+          cd out
+          git init -q -b status
+          git add status.json
+          git -c user.name=github-actions[bot] -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -q -m "状态 $(TZ=Asia/Shanghai date '+%m-%d %H:%M')"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" status

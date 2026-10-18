@@ -1,0 +1,49 @@
+{
+  "owner": "zxy8125ss",
+  "retentionDays": 30,
+  "maxFileBytes": 2000000,
+  "apps": {
+    "hub": {
+      "name": "总控台", "desc": "本页",
+      "deployIgnoreBot": true,
+      "phone": {"kind": "none", "text": "本机只存显示偏好，不需要备份"}
+    },
+    "game-on": {
+      "name": "Game On", "desc": "比赛日程",
+      "maxGap": {"更新赛程": 8}, "adapter": "gameon",
+      "phone": {"kind": "none", "text": "赛程在云端；本机只存显示偏好，不需要备份"}
+    },
+    "life-radar": {
+      "name": "生活雷达", "desc": "每日信息核查", "adapter": "radar",
+      "phone": {"kind": "cloud", "text": "信息、投喂和复盘都经 GitHub 提交，已在云端"}
+    },
+    "fund-diary": {
+      "name": "基金日记", "desc": "预测与复盘", "adapter": "fund",
+      "phone": {"kind": "cloud", "text": "你填的预测经 GitHub 提交锁定，已在云端"}
+    },
+    "zuoyou": {
+      "name": "左右千年", "desc": "中外历史对照",
+      "phone": {"kind": "local", "text": "笔记、收藏和学习进度只在手机里。在 App「笔记」页点「导出完整备份」"}
+    },
+    "crosscheck": {
+      "name": "Crosscheck", "desc": "人生指南对照",
+      "phone": {"kind": "local", "text": "你写的想法和标记只在手机里。在 App「我的」页点「发到微信」，或开启「自动备份到 GitHub」", "path": "#/me"}
+    },
+    "ease": {
+      "name": "Ease", "desc": "体重管理",
+      "phone": {"kind": "local", "text": "饮食、体重和打卡记录只在手机里。在 App「数据」卡片点「备份到「文件」」，那里能看到上次备份日期"}
+    },
+    "forge": {
+      "name": "Forge", "desc": "习惯与时间",
+      "phone": {"kind": "local", "text": "专注记录和心得只在手机里。在 App「记录」页右上角点「导出与备份」"}
+    },
+    "leader-party-newchina": {
+      "name": "领袖·政党·新中国", "desc": "历史时间轴",
+      "phone": {"kind": "local", "text": "收藏、笔记和自测进度只在手机里。在 App「设置」页做备份"}
+    },
+    "gomoku": {
+      "name": "五子棋", "desc": "人机对弈",
+      "phone": {"kind": "minor", "text": "只存设置和战绩，App 没有备份功能，丢了影响不大"}
+    }
+  }
+}
