@@ -200,9 +200,9 @@ input[type=search]{width:100%;font:inherit;font-size:14px;border:1px solid var(-
   <footer id="foot"></footer>
 </div>
 
-<script src="records.js?v=2026-10-18-1800"></script>
+<script src="records.js?v=2026-10-18-1850"></script>
 <script>
-const BUILD = '2026-10-18-1800';
+const BUILD = '2026-10-18-1850';
 (async () => {   // 自动更新：线上有新版本就刷新一次
   try {
     const v = (await (await fetch('version.json?t=' + Date.now(), {cache:'no-store'})).json()).build;
@@ -614,7 +614,7 @@ async function refreshRecState(){
 }
 function recShell(){
   return `<section><h2>我的记录<small>只存在这台手机的总控台里</small></h2>
-    <div class="panel"><p>Ease、Forge、Crosscheck、左右千年、领袖·政党这几个 App 的记录存在它们各自里面。先在 App 里导出备份文件，再在这里导入，就能在总控台里看、搜、导出。</p>
+    <div class="panel"><p>Ease、Forge、Crosscheck、左右千年、领袖·政党、膳食罗盘这几个 App 的记录存在它们各自里面。先在 App 里导出备份文件，再在这里导入，就能在总控台里看、搜、导出。</p>
       <p class="muted">每次导入都会和之前导入的合在一起，重复的自动去掉。想攒全，就隔一段时间在 App 里导出一次再导入。</p>
       <div class="btns" style="margin-top:10px"><label class="btn pri" for="recfile">导入备份文件</label><input id="recfile" type="file" accept=".json,application/json" multiple hidden>
         <button class="btn" type="button" data-rx="all-md">全部导出成文字</button><button class="btn" type="button" data-rx="all-json">全部导出成备份文件</button></div>

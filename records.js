@@ -119,9 +119,31 @@
           readingProgress, errorReports: Object.values(C.errorReports), texts: obj(C.texts) };
       }
     }
+    ,
+    meal: {
+      name: '膳食罗盘', match: d => d && d.schema === 2 && Array.isArray(d.ingredients) && 'rules' in d,
+      how: '在膳食罗盘「规则」页底部的「数据」里点「导出数据」',
+      split: d => ({ ingredients: keyed(d.ingredients, x => x.id), history: keyed(d.history, x => x.id),
+        state: keyed([{ key: 'state', rules: d.rules, draft: d.draft, shopping: d.shopping, exportedAt: d.exportedAt }], x => x.key) }),
+      stamp: (c, x) => c === 'history' ? toMs(x.savedAt) : c === 'state' ? toMs(x.exportedAt) : 1,
+      async items(C) {
+        const byDate = {};   // 同一天只留最近保存的那份菜单
+        for (const h of Object.values(C.history)) for (const d of h.days || []) {
+          if (!byDate[d.date] || toMs(h.savedAt) > byDate[d.date].saved) byDate[d.date] = { saved: toMs(h.savedAt), d };
+        }
+        const out = Object.values(byDate).map(({ d }) => ({ at: toMs(d.date + 'T12:00:00'), title: '当天菜单',
+          text: (d.meals || []).map(m => `${m.label}：${Object.values(m.slots || {}).map(v => v && v.name).filter(Boolean).join('、') || '—'}`).join('\n') }));
+        const ings = Object.values(C.ingredients);
+        if (ings.length) out.push({ at: 0, title: `食材库 · ${ings.length} 个`, text: ings.map(i => i.name).join('、') });
+        return out;
+      },
+      build: C => { const st = Object.values(C.state)[0] || {};
+        return { schema: 2, ingredients: Object.values(C.ingredients), rules: st.rules, draft: st.draft || null,
+          history: Object.values(C.history).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0)), shopping: st.shopping || { checked: [], extra: [] }, exportedAt: new Date().toISOString() }; }
+    }
   };
-  const ORDER = ['forge', 'ease', 'crosscheck', 'zuoyou', 'lp'];
-  const REPO = { forge: 'forge', ease: 'ease', crosscheck: 'crosscheck', zuoyou: 'zuoyou', lp: 'leader-party-newchina' };
+  const ORDER = ['forge', 'ease', 'crosscheck', 'zuoyou', 'lp', 'meal'];
+  const REPO = { forge: 'forge', ease: 'ease', crosscheck: 'crosscheck', zuoyou: 'zuoyou', lp: 'leader-party-newchina', meal: 'meal-compass' };
   function keyed(list, fn) { const o = {}; for (const x of list || []) { if (x == null) continue; const k = fn(x); if (k != null && k !== '') o[k] = x; } return o; }
 
   /* ---------- 本机存储（IndexedDB） ---------- */
