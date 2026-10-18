@@ -152,6 +152,16 @@ h2 small{font:12px var(--sans);color:var(--muted);white-space:nowrap}
 .links{display:flex;gap:16px;flex-wrap:wrap;font-size:13px}
 .links a{text-decoration:none;font-weight:600}
 footer{margin-top:26px;color:var(--muted);font-size:12px;text-align:center;line-height:1.7}
+.dir{list-style:none;margin:0;padding:0;display:grid}
+.dir li{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.dir li:first-child{border-top:0;padding-top:0}
+.dir .ic{width:32px;height:32px;border-radius:9px;background:var(--sand);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;font:600 14px var(--serif);color:var(--brown)}
+.dir .ic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.dir .nm{min-width:0}
+.dir .nm a{font-weight:600;text-decoration:none;color:var(--ink);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dir .nm span{font-family:var(--mono);font-size:11.5px;color:var(--teal);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:all;-webkit-user-select:all}
+.dir button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;font-size:12.5px;white-space:nowrap}
+.dir button.done{background:var(--okbg);color:var(--ok);border-color:transparent}
 .skeleton{height:140px;border-radius:24px;background:var(--sand);opacity:.6}
 </style>
 </head>
@@ -168,6 +178,7 @@ footer{margin-top:26px;color:var(--muted);font-size:12px;text-align:center;line-
     <div class="pillars" id="pillars" role="tablist" aria-label="查看"></div>
   </div>
   <div class="note" id="note" hidden></div>
+  <section id="dirsec"></section>
 
   <main id="view"><div class="list" style="margin-top:22px"><div class="skeleton"></div><div class="skeleton"></div></div></main>
 
@@ -175,7 +186,7 @@ footer{margin-top:26px;color:var(--muted);font-size:12px;text-align:center;line-
 </div>
 
 <script>
-const BUILD = '2026-10-18-1750';
+const BUILD = '2026-10-18-1710';
 (async () => {   // 自动更新：线上有新版本就刷新一次
   try {
     const v = (await (await fetch('version.json?t=' + Date.now(), {cache:'no-store'})).json()).build;
@@ -188,8 +199,8 @@ const STATUS_URL = `https://raw.githubusercontent.com/${OWNER}/hub/status/status
 const DEFAULT_GAP = 27;
 const BAD = ['failure','timed_out','startup_failure','action_required'];
 const IGNORE = ['cancelled','skipped','neutral','stale'];
-const JOBNAME = {'pages build and deployment':'发布网页','Deploy to gh-pages':'发布网页','部署':'发布网页','部署到 GitHub Pages':'发布网页','Deploy to GitHub Pages':'发布网页','pages':'发布网页'};
-const EVENT = {schedule:'定时',push:'提交',workflow_dispatch:'手动',issues:'App提交',dynamic:'发布',workflow_run:'联动',repository_dispatch:'触发'};
+const JOBNAME = {'pages build and deployment':'更新网页','Deploy to gh-pages':'更新网页','部署':'更新网页','部署到 GitHub Pages':'更新网页','Deploy to GitHub Pages':'更新网页','pages':'更新网页'};
+const EVENT = {schedule:'定时',push:'提交',workflow_dispatch:'手动',issues:'App提交',dynamic:'更新网页',workflow_run:'联动',repository_dispatch:'触发'};
 const RANK = {bad:0,warn:1,ok:2,idle:3};
 const VIEWS = {run:'运行正常', ver:'版本更新', bak:'最近备份'};
 
@@ -215,7 +226,7 @@ const hm = t => fmt(t, {hour:'2-digit', minute:'2-digit'});
 const md = t => fmt(t, {month:'numeric', day:'numeric'});
 const dur = s => s == null ? '—' : s < 60 ? Math.round(s) + ' 秒' : (s / 60).toFixed(s < 600 ? 1 : 0) + ' 分钟';
 const size = b => b == null ? '—' : b < 1024 * 1024 ? Math.max(1, Math.round(b / 1024)) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
-const isDeploy = r => JOBNAME[r.name] === '发布网页' || /deploy|pages/i.test(r.path || '');
+const isDeploy = r => JOBNAME[r.name] === '更新网页' || /deploy|pages/i.test(r.path || '');
 
 /* ---------- cron（UTC） ---------- */
 function field(f, lo, hi){
@@ -355,8 +366,8 @@ function judgeRun(a){
   // 网页能否打开：手机和服务器都打不开才算故障；只有一边打不开记为留意
   const ph = a.probe, sv = a.site;
   if (sv && !sv.ok && (!ph || !ph.ok)) { state = 'bad'; alerts.unshift({level:'bad', text:`网页打不开（${sv.code || '无响应'}）`}); }
-  else if (ph && !ph.ok) { if (RANK[state] > 1) state = 'warn'; alerts.unshift({level:'warn', text:'这次从你这儿没打开网页，服务器检查是正常的'}); }
-  else if (sv && !sv.ok) { if (RANK[state] > 1) state = 'warn'; alerts.unshift({level:'warn', text:'服务器上次没打开网页，你这儿是正常的'}); }
+  else if (ph && !ph.ok) { if (RANK[state] > 1) state = 'warn'; alerts.unshift({level:'warn', text:'这次你这儿没打开网页，自动检查时是正常的'}); }
+  else if (sv && !sv.ok) { if (RANK[state] > 1) state = 'warn'; alerts.unshift({level:'warn', text:'自动检查时没打开网页，你这儿是正常的'}); }
   for (const w of (a.content && a.content.warn) || []) { alerts.push({level:'warn', text:w}); if (RANK[state] > 1) state = 'warn'; }
   if (a.runs == null) { alerts.push({level:'warn', text:'没读到任务记录'}); if (RANK[state] > 1) state = 'warn'; }
   const recent = (a.runs || []).filter(r => Date.now() - new Date(r.created_at) < 14 * 864e5);
@@ -378,13 +389,13 @@ function judgeVer(a){
   const dm = raw && raw.match(/^\d{4}[-.](\d{2})[-.](\d{2})/);
   const label = raw ? (dm ? `${+dm[1]}.${dm[2]} 版` : (/^\d/.test(raw) ? 'v' + raw : raw)) : (a.headHuman ? md(a.headHuman.date).replace('/', '.') + ' 版' : '—');
   const labelNote = a.version && a.version.label ? a.version.source : '没有标版本号，按最近一次功能更新的日期显示';
-  let state = 'ok', text = '线上已是最新';
-  if (!last) { state = 'idle'; text = '没有发布记录'; }
-  else if (last.status !== 'completed') { const long = Date.now() - new Date(last.created_at) > 30 * 60000; state = long ? 'warn' : 'ok'; text = long ? `发布已经卡了 ${ago(last.created_at).replace('前', '')}` : '正在发布新版本'; }
-  else if (BAD.includes(last.conclusion)) { state = 'bad'; text = '最近一次发布失败，线上还是旧版'; }
+  let state = 'ok', text = '网页已是最新版';
+  if (!last) { state = 'idle'; text = '没有更新网页的记录'; }
+  else if (last.status !== 'completed') { const long = Date.now() - new Date(last.created_at) > 30 * 60000; state = long ? 'warn' : 'ok'; text = long ? `更新网页已经卡了 ${ago(last.created_at).replace('前', '')}` : '正在更新网页'; }
+  else if (BAD.includes(last.conclusion)) { state = 'bad'; text = '最近一次更新网页失败，网页还是旧版'; }
   else if (head && new Date(last.created_at) < new Date(head.date) - 60e3) {
     const mins = (Date.now() - new Date(head.date)) / 60000;
-    state = mins > 30 ? 'warn' : 'ok'; text = mins > 30 ? `最新提交 ${ago(head.date)}，还没发布上线` : '最新提交正在等待发布';
+    state = mins > 30 ? 'warn' : 'ok'; text = mins > 30 ? `${ago(head.date)}改的内容还没更新到网页` : '刚改的内容正在更新到网页';
   }
   return {state, text, label, labelNote, deployedAt: ok ? ok.updated_at : null, updates: a.updates || [], autoWeek: a.autoWeek || 0, humanWeek: a.humanWeek || 0};
 }
@@ -392,10 +403,10 @@ function judgeVer(a){
 function judgeBak(a){
   const b = a.backup && a.backup.latest;
   let state = 'ok', text;
-  if (!b) { state = 'warn'; text = '还没有整库快照'; }
-  else if (b.error) { state = 'bad'; text = '最近一次快照失败'; }
-  else if (Date.now() - new Date(b.at) > 36 * 3600e3) { state = 'warn'; text = `快照已有 ${ago(b.at)}，每日备份可能没跑`; }
-  else text = `${md(b.at)} ${hm(b.at)} 已快照`;
+  if (!b) { state = 'warn'; text = '还没有自动备份'; }
+  else if (b.error) { state = 'bad'; text = '最近一次自动备份失败'; }
+  else if (Date.now() - new Date(b.at) > 36 * 3600e3) { state = 'warn'; text = `上次备份在 ${ago(b.at)}，每日备份可能没跑`; }
+  else text = `${md(b.at)} ${hm(b.at)} 已备份`;
   const hist = (a.backup && a.backup.history) || [];
   return {state, text, latest: b, hist, changed: hist.length > 1 ? hist[0].sha !== hist[1].sha : null};
 }
@@ -422,13 +433,13 @@ async function load(live){
         liveAt = Date.now();
       } catch (e) {
         note.hidden = false;
-        note.textContent = e.rate ? `实时检查的次数这小时用完了（约 ${rateReset ? Math.max(1, Math.ceil((rateReset - Date.now()) / 60000)) : 60} 分钟后恢复），下面是服务器 ${ago(st.generated_at)}的检查结果。` : '实时检查没连上 GitHub，下面是服务器最近一次的检查结果。';
+        note.textContent = e.rate ? `这小时的核对次数用完了（约 ${rateReset ? Math.max(1, Math.ceil((rateReset - Date.now()) / 60000)) : 60} 分钟后恢复），下面是 ${ago(st.generated_at)}自动检查的结果。` : '核对时没连上 GitHub，下面是最近一次自动检查的结果。';
       }
     }
     await Promise.all(extra);
     data = st;
     store.set('hub-last', {at: Date.now(), st});
-    if (Date.now() - new Date(st.generated_at) > 90 * 60000) { note.hidden = false; note.textContent = `服务器的定时检查已经 ${ago(st.generated_at)}没更新了，总控台自己的「状态检查」任务可能停了。`; }
+    if (Date.now() - new Date(st.generated_at) > 90 * 60000) { note.hidden = false; note.textContent = `自动检查已经 ${ago(st.generated_at)}没更新了，总控台自己的检查任务可能停了。`; }
     render();
   } catch (e) {
     note.hidden = false; note.textContent = '读取状态失败，检查一下网络。下面是上次的结果。';
@@ -445,13 +456,13 @@ function render(){
     if (a.V.state === 'bad' || a.V.state === 'warn') issues.push({level:a.V.state, text:`${a.title}：${a.V.text}`});
     if (a.B.state === 'bad' || (a.B.state === 'warn' && data.backup)) issues.push({level:a.B.state, text:`${a.title}：${a.B.text}`});
   }
-  if (!data.backup) issues.push({level:'warn', text:'整库备份还没跑过第一次'});
+  if (!data.backup) issues.push({level:'warn', text:'自动备份还没跑过第一次'});
   issues.sort((x, y) => RANK[x.level] - RANK[y.level]);
   const top = issues.length ? issues[0].level : 'ok';
   const v = $('#verdict'); v.className = 'verdict ' + top;
   v.innerHTML = issues.length
     ? `<span class="dot"></span><div><b>${issues.filter(i => i.level === 'bad').length ? issues.filter(i => i.level === 'bad').length + ' 个问题要处理' : issues.length + ' 处需要留意'}</b><ul>${issues.slice(0, 4).map(i => `<li>${esc(i.text)}</li>`).join('')}${issues.length > 4 ? `<li>另有 ${issues.length - 4} 处</li>` : ''}</ul></div>`
-    : `<span class="dot"></span><div><b>${apps.length} 个 App 全部正常</b><ul><li>任务按时跑完，线上都是最新版，今天已备份</li></ul></div>`;
+    : `<span class="dot"></span><div><b>${apps.length} 个 App 全部正常</b><ul><li>任务按时跑完，网页都是最新版，今天已备份</li></ul></div>`;
 
   const worst = k => apps.reduce((s, a) => RANK[a[k].state] < RANK[s] ? a[k].state : s, 'ok');
   const runOk = apps.filter(a => RANK[a.R.state] >= 2).length;
@@ -460,14 +471,15 @@ function render(){
   const bk = data.backup;
   const P = {
     run: {dot: worst('R'), big: `${runOk}/${apps.length}`, sub: [`今天失败 ${fails} 次`, !fails ? '任务都跑成功了' : apps.some(a => a.R.state === 'bad') ? '还有没恢复的' : '都已恢复']},
-    ver: {dot: worst('V'), big: `${updated} 个`, sub: ['本周有功能更新', pending ? `${pending} 个没上线` : '线上都是最新']},
-    bak: {dot: bk ? worst('B') : 'warn', big: bk ? md(bk.at) : '未备份', sub: bk ? [`${bk.count} 个仓库`, size(bk.total_bytes)] : ['每天 03:23', '自动快照']}
+    ver: {dot: worst('V'), big: `${updated} 个`, sub: ['本周有功能更新', pending ? `${pending} 个网页没更新` : '网页都是最新版']},
+    bak: {dot: bk ? worst('B') : 'warn', big: bk ? md(bk.at) : '未备份', sub: bk ? [`${bk.count} 个 App`, size(bk.total_bytes)] : ['每天 03:23', '自动备份']}
   };
   $('#pillars').innerHTML = Object.keys(VIEWS).map(k => `<button class="pillar" type="button" role="tab" data-view="${k}" aria-pressed="${k === view}"><span class="k"><i class="c-${P[k].dot}"></i>${VIEWS[k]}</span><b>${P[k].big}</b><span>${P[k].sub.map(x => `<em>${esc(x)}</em>`).join('')}</span></button>`).join('');
 
+  renderDir(apps);
   $('#view').innerHTML = view === 'run' ? viewRun(apps) : view === 'ver' ? viewVer(apps) : viewBak(apps);
-  $('#when').textContent = `服务器检查于 ${clock(data.generated_at)}（${ago(data.generated_at)}）${liveAt ? ' · 刚刚实时核对' : ''}`;
-  $('#foot').innerHTML = `服务器每 30 分钟检查一次，每天 03:23 做整库备份<br>新建的仓库只要开了 GitHub Pages，会自动出现在这里`;
+  $('#when').textContent = `自动检查于 ${clock(data.generated_at)}（${ago(data.generated_at)}）${liveAt ? ' · 刚刚又核对过' : ''}`;
+  $('#foot').innerHTML = `每 30 分钟自动检查一次，每天 03:23 自动备份<br>新做的 App 发布成网页后，会自动出现在这里`;
   try { if (navigator.setAppBadge) { const n = issues.filter(i => i.level === 'bad').length; n ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } } catch (e) {}
 }
 
@@ -504,7 +516,7 @@ function viewRun(apps){
         <div class="kv"><div><b>${R.week ? Math.round(R.weekOk / R.week * 100) + '%' : '—'}</b><span>7 天成功率</span></div>
           <div><b>${R.next ? hm(R.next) : (R.auto ? '—' : '无')}</b><span>下次定时</span></div>
           <div><b style="${p && !p.ok ? 'color:var(--bad)' : ''}">${p ? (p.ok ? (p.ms != null ? p.ms + ' 毫秒' : '正常') : '打不开') : '—'}</b><span>网页响应</span></div>
-          <div><b>${ago(a.pushed_at)}</b><span>仓库最后改动</span></div></div>
+          <div><b>${ago(a.pushed_at)}</b><span>最后改动</span></div></div>
         ${content}${toggle(a)}</div>${openSet.has(a.repo) ? detailRun(a) : ''}</article>`;
   }).join('');
   return `<section><h2>接下来 24 小时<small>${evs.length ? `共 ${evs.length} 次定时任务` : ''}</small></h2><div class="panel">${tl}${freqNote}</div></section>
@@ -531,7 +543,7 @@ function viewVer(apps){
     const ups = V.updates.slice(0, open ? 5 : 3);
     return `<article class="app ${V.state === 'ok' || V.state === 'idle' ? '' : V.state}" data-open="${open ? 1 : 0}">${head(a, `<span class="ver" title="${esc(V.labelNote)}">${esc(V.label)}</span>`)}
       <div class="body">
-        <div class="dl"><span class="${V.state === 'bad' ? 'alert' : V.state === 'warn' ? 'alert w' : ''}" style="font-size:13px">${V.state === 'ok' ? '<span class="y">●</span> ' : ''}${esc(V.text)}</span><span class="pill ${V.state}">${V.deployedAt ? '上线于 ' + clock(V.deployedAt) : '—'}</span></div>
+        <div class="dl"><span class="${V.state === 'bad' ? 'alert' : V.state === 'warn' ? 'alert w' : ''}" style="font-size:13px">${V.state === 'ok' ? '<span class="y">●</span> ' : ''}${esc(V.text)}</span><span class="pill ${V.state}">${V.deployedAt ? '网页更新于 ' + clock(V.deployedAt) : '—'}</span></div>
         <div class="box"><span class="lab">最近的功能更新<em>${V.humanWeek ? `本周 ${V.humanWeek} 次` : '本周没有'}</em></span>
           ${ups.length ? `<ul class="ups">${ups.map(u => `<li><span class="d">${md(u.date)}</span><span class="m" title="${esc(u.msg)}">${esc(u.msg)}</span></li>`).join('')}</ul>` : '<div class="n">还没有功能更新记录</div>'}
           ${V.autoWeek ? `<div class="n" style="font-size:12px">另有数据自动更新：本周 ${V.autoWeek} 次</div>` : ''}</div>
@@ -545,13 +557,13 @@ function viewVer(apps){
 function viewBak(apps){
   const bk = data.backup;
   const intro = bk
-    ? `<p><b>整库快照</b>：每天 03:23 自动把 ${bk.count} 个仓库的代码和云端数据各打一个压缩包，保留 ${bk.retention} 天（现有 ${bk.days} 天）。</p>
-       <p class="muted">最近一次：${clock(bk.at)} · 共 ${size(bk.total_bytes)}。超过 2 MB 的大文件（如 Forge 的音乐）不收录，它们仍在各自仓库里。</p>
+    ? `<p><b>每日自动备份</b>：每天 03:23 把 ${bk.count} 个 App 的程序和存在 GitHub 上的数据各打一个压缩包，保留 ${bk.retention} 天（已有 ${bk.days} 天）。</p>
+       <p class="muted">最近一次：${clock(bk.at)} · 共 ${size(bk.total_bytes)}。超过 2 MB 的大文件（如 Forge 的音乐）不打包，它们仍在 GitHub 上。</p>
        <a class="btnlink" href="${esc(bk.all_url)}" rel="noopener">下载全部（${size(bk.total_bytes)}）</a>`
-    : `<p><b>整库快照</b>：每天 03:23 自动把每个仓库的代码和云端数据各打一个压缩包，保留 30 天。</p><p class="muted">第一次备份还没完成。</p>`;
+    : `<p><b>每日自动备份</b>：每天 03:23 把每个 App 的程序和数据各打一个压缩包，保留 30 天。</p><p class="muted">第一次备份还没完成。</p>`;
   const localCnt = apps.filter(a => a.phone.kind === 'local').length;
   const order = {local:0, unknown:1, cloud:2, minor:3, none:4};
-  const kindText = {local:'只在手机里', cloud:'已在云端', none:'无需备份', minor:'影响不大', unknown:'未登记'};
+  const kindText = {local:'只在手机里', cloud:'已存 GitHub', none:'无需备份', minor:'影响不大', unknown:'未登记'};
   const cards = [...apps].sort((x, y) => RANK[x.B.state] - RANK[y.B.state] || order[x.phone.kind] - order[y.phone.kind]).map(a => {
     const B = a.B, b = B.latest, max = Math.max(...B.hist.map(h => h.bytes || 0), 1);
     const hist = B.hist.slice().reverse().map((h, i, arr) => `<i class="${i && arr[i - 1].sha === h.sha ? 'same' : ''}" style="height:${Math.max(15, (h.bytes || 0) / max * 100)}%" title="${esc(h.date)} ${size(h.bytes)}"></i>`).join('');
@@ -562,19 +574,36 @@ function viewBak(apps){
       : `<div class="${b && b.error ? 'alert' : 'n'}">${esc(B.text)}</div>`;
     return `<article class="app ${B.state === 'ok' ? '' : B.state}">${head(a, `<span class="chip ${a.phone.kind}">${kindText[a.phone.kind] || '未登记'}</span>`)}
       <div class="body">
-        <div class="box"><span class="lab">云端整库快照<em>代码＋云端数据</em></span>${cloud}</div>
+        <div class="box"><span class="lab">每日自动备份<em>程序＋GitHub 上的数据</em></span>${cloud}</div>
         <div class="box"><span class="lab">手机里的数据<em>${kindText[a.phone.kind] || ''}</em></span><div>${esc(a.phone.text)}</div>
           ${a.phone.kind === 'local' ? `<div><a href="${esc(a.url + (a.phone.path || ''))}" target="_blank" rel="noopener" style="font-weight:600;text-decoration:none">打开 ${esc(a.title)} 去备份</a></div>` : ''}</div>
       </div></article>`;
   }).join('');
-  return `<section><h2>云端数据</h2><div class="panel">${intro}</div></section>
+  return `<section><h2>自动备份</h2><div class="panel">${intro}</div></section>
     <section><h2>各 App 备份情况<small>${localCnt} 个 App 有只在手机里的数据</small></h2>
     <div class="panel" style="margin-bottom:12px"><p class="muted">这 ${localCnt} 个 App 的记录存在你手机上，总控台读不到，也看不到它们上次备份的时间。换手机、清理 Safari 数据或删掉 App 前，记得在 App 里各备份一次。</p></div>
     <div class="list">${cards}</div></section>`;
 }
 
+/* 全部 App 网址 */
+const short = u => u.replace(/^https?:\/\//, '').replace(/\/$/, '');
+function renderDir(apps){
+  const list = [...apps].sort((x, y) => (x.key === 'hub') - (y.key === 'hub'));
+  $('#dirsec').innerHTML = `<h2>全部 App 网址<small>点名字打开 · 点「复制」发给别人</small></h2><div class="panel"><ul class="dir">${list.map(a => `<li>
+    <span class="ic">${esc(a.title.slice(0, 1))}${a.probe && a.probe.icon ? `<img src="${esc(a.probe.icon)}" alt="" onerror="this.remove()">` : ''}</span>
+    <span class="nm"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a><span>${esc(short(a.url))}</span></span>
+    <button type="button" data-copy="${esc(a.url)}">复制</button></li>`).join('')}</ul></div>`;
+}
+
 /* ---------- 交互 ---------- */
 document.addEventListener('click', e => {
+  const c = e.target.closest('[data-copy]');
+  if (c) {
+    const done = () => { c.textContent = '已复制'; c.classList.add('done'); setTimeout(() => { c.textContent = '复制'; c.classList.remove('done'); }, 1500); };
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents(c.previousElementSibling.lastElementChild); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); c.textContent = '已选中，长按复制'; };
+    try { navigator.clipboard.writeText(c.dataset.copy).then(done, fallback); } catch (err) { fallback(); }
+    return;
+  }
   const p = e.target.closest('[data-view]');
   if (p) { view = p.dataset.view; store.set('hub-view', view); render(); return; }
   const t = e.target.closest('[data-toggle]');
