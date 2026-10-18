@@ -1,0 +1,101 @@
+{
+ "entries": [
+  {
+   "date": "2026-10-18",
+   "at": "2026-10-18T16:11+08:00",
+   "tag": "backup-2026-10-18",
+   "total_bytes": 15327608,
+   "all_url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/all.zip",
+   "apps": {
+    "crosscheck": {
+     "sha": "82b7281",
+     "files": 99,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 1403736,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/crosscheck.zip"
+    },
+    "ease": {
+     "sha": "f0668b6",
+     "files": 22,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 123663,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/ease.zip"
+    },
+    "Forge": {
+     "sha": "99f7b9e",
+     "files": 68,
+     "skipped": 54,
+     "skipped_bytes": 340195812,
+     "bytes": 3442176,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/Forge.zip"
+    },
+    "Fund-diary": {
+     "sha": "717f673",
+     "files": 186,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 676819,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/Fund-diary.zip"
+    },
+    "Game-On": {
+     "sha": "c105ca1",
+     "files": 17,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 132807,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/Game-On.zip"
+    },
+    "gomoku": {
+     "sha": "731cf2c",
+     "files": 23,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 297497,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/gomoku.zip"
+    },
+    "hub": {
+     "sha": "760859b",
+     "files": 10,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 27720,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/hub.zip"
+    },
+    "leader-party-newchina": {
+     "sha": "e38d70e",
+     "files": 53,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 1016844,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/leader-party-newchina.zip"
+    },
+    "life-radar": {
+     "sha": "c2e2ff2",
+     "files": 22,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 187425,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/life-radar.zip"
+    },
+    "Yaya": {
+     "sha": "",
+     "files": 0,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 22,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/Yaya.zip"
+    },
+    "zuoyou": {
+     "sha": "77b1fda",
+     "files": 160,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 8017781,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/zuoyou.zip"
+    }
+   }
+  }
+ ]
+}
