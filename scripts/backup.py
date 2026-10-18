@@ -55,6 +55,8 @@ def main():
         for r in sorted(repos, key=lambda r: r['name'].lower()):
             try:
                 data, info = snapshot(r['name'], tmp)
+                if info['files'] == 0:  # 空仓库不备份
+                    print(f"{r['name']}: 空仓库，跳过"); continue
                 blobs[r['name']] = data
                 results[r['name']] = {**info, 'bytes': len(data)}
                 print(f"{r['name']}: {info['files']} 个文件, {len(data)//1024} KB, 跳过 {info['skipped']} 个大文件")

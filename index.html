@@ -57,7 +57,8 @@ h1{font:600 25px/1.2 var(--serif);margin:0;letter-spacing:.03em}
 .pillar .k{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .pillar .k i{width:8px;height:8px;border-radius:50%;flex:none}
 .pillar b{font:600 20px/1.2 var(--serif);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pillar span{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pillar span{font-size:11.5px;color:var(--muted);line-height:1.45}
+.pillar span em{font-style:normal;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .c-ok{background:var(--ok)} .c-warn{background:var(--warn)} .c-bad{background:var(--bad)} .c-idle{background:var(--idle)}
 
 .note{background:var(--warnbg);color:var(--warn);border-radius:16px;padding:10px 14px;font-size:13px;margin-top:12px}
@@ -174,7 +175,7 @@ footer{margin-top:26px;color:var(--muted);font-size:12px;text-align:center;line-
 </div>
 
 <script>
-const BUILD = '2026-10-18-1700';
+const BUILD = '2026-10-18-1720';
 (async () => {   // 自动更新：线上有新版本就刷新一次
   try {
     const v = (await (await fetch('version.json?t=' + Date.now(), {cache:'no-store'})).json()).build;
@@ -363,7 +364,10 @@ function judgeVer(a){
   const head = a.deployIgnoreBot ? a.headHuman : a.head;
   const deploys = (a.runs || []).filter(isDeploy);
   const last = deploys[0], ok = deploys.find(r => r.status === 'completed' && r.conclusion === 'success');
-  const label = a.version && a.version.label ? a.version.label : (a.headHuman ? fmt(a.headHuman.date, {year:'numeric', month:'2-digit', day:'2-digit'}).replace(/\//g, '.') : '—');
+  // 版本号统一成短写法：语义版本显示 v1.3.1；日期型（构建号或没标版本的）显示「10.18 版」
+  const raw = a.version && a.version.label;
+  const dm = raw && raw.match(/^\d{4}[-.](\d{2})[-.](\d{2})/);
+  const label = raw ? (dm ? `${+dm[1]}.${dm[2]} 版` : (/^\d/.test(raw) ? 'v' + raw : raw)) : (a.headHuman ? md(a.headHuman.date).replace('/', '.') + ' 版' : '—');
   const labelNote = a.version && a.version.label ? a.version.source : '没有标版本号，按最近一次功能更新的日期显示';
   let state = 'ok', text = '线上已是最新';
   if (!last) { state = 'idle'; text = '没有发布记录'; }
@@ -446,11 +450,11 @@ function render(){
   const updated = apps.filter(a => a.V.humanWeek > 0).length, pending = apps.filter(a => a.V.state !== 'ok' && a.V.state !== 'idle').length;
   const bk = data.backup;
   const P = {
-    run: {dot: worst('R'), big: `${runOk}/${apps.length}`, sub: `今天运行 ${today} 次 · 失败 ${fails}`},
-    ver: {dot: worst('V'), big: `${updated} 个`, sub: pending ? `本周有更新 · ${pending} 个没上线` : '本周有更新 · 都已上线'},
-    bak: {dot: bk ? worst('B') : 'warn', big: bk ? md(bk.at) : '未备份', sub: bk ? `${bk.count} 个仓库 · ${size(bk.total_bytes)}` : '每天 03:23 自动快照'}
+    run: {dot: worst('R'), big: `${runOk}/${apps.length}`, sub: ['个 App 正常', `今天失败 ${fails} 次`]},
+    ver: {dot: worst('V'), big: `${updated} 个`, sub: ['本周有更新', pending ? `${pending} 个没上线` : '都已上线']},
+    bak: {dot: bk ? worst('B') : 'warn', big: bk ? md(bk.at) : '未备份', sub: bk ? [`${bk.count} 个仓库`, size(bk.total_bytes)] : ['每天 03:23', '自动快照']}
   };
-  $('#pillars').innerHTML = Object.keys(VIEWS).map(k => `<button class="pillar" type="button" role="tab" data-view="${k}" aria-pressed="${k === view}"><span class="k"><i class="c-${P[k].dot}"></i>${VIEWS[k]}</span><b>${P[k].big}</b><span>${esc(P[k].sub)}</span></button>`).join('');
+  $('#pillars').innerHTML = Object.keys(VIEWS).map(k => `<button class="pillar" type="button" role="tab" data-view="${k}" aria-pressed="${k === view}"><span class="k"><i class="c-${P[k].dot}"></i>${VIEWS[k]}</span><b>${P[k].big}</b><span>${P[k].sub.map(x => `<em>${esc(x)}</em>`).join('')}</span></button>`).join('');
 
   $('#view').innerHTML = view === 'run' ? viewRun(apps) : view === 'ver' ? viewVer(apps) : viewBak(apps);
   $('#when').textContent = `服务器检查于 ${clock(data.generated_at)}（${ago(data.generated_at)}）${liveAt ? ' · 刚刚实时核对' : ''}`;
@@ -468,7 +472,9 @@ const sortBy = k => (x, y) => RANK[x[k].state] - RANK[y[k].state] || (y.R.auto -
 /* 运行 */
 function viewRun(apps){
   const now = Date.now(), end = now + 864e5;
-  const evs = apps.flatMap(a => a.R.wfs.flatMap(w => w.nextList.map(t => ({t: new Date(t).getTime(), a, w})))).filter(e => e.t > now && e.t < end).sort((x, y) => x.t - y.t);
+  // 每天超过 12 次的高频任务（如总控台自己的状态检查）不上时间轴，单独注明
+  const frequent = apps.flatMap(a => a.R.wfs.filter(w => w.nextList.length > 12).map(w => `${a.title}「${w.name}」`));
+  const evs = apps.flatMap(a => a.R.wfs.filter(w => w.nextList.length <= 12).flatMap(w => w.nextList.map(t => ({t: new Date(t).getTime(), a, w})))).filter(e => e.t > now && e.t < end).sort((x, y) => x.t - y.t);
   const pos = t => ((t - now) / 864e5 * 100).toFixed(2) + '%';
   const nights = []; const d0 = new Date(now + BJ); d0.setUTCHours(0, 0, 0, 0);
   for (let k = 0; k < 2; k++) { const s = d0.getTime() - BJ + k * 864e5, e = s + 7 * 3600e3, x = Math.max(s, now), y = Math.min(e, end);
@@ -478,6 +484,7 @@ function viewRun(apps){
   const tl = evs.length ? `<div class="axis"><div class="bar"></div>${nights.join('')}${ticks.join('')}<span class="now"></span>${evs.map(e => `<span class="ev" style="left:${pos(e.t)}"></span>`).join('')}</div>
     <ul class="upcoming">${shown.map(e => `<li><span class="t">${hm(e.t)}</span><span class="w">${esc(e.a.title)} <span>· ${esc(e.w.name)}</span></span><span class="in">${until(e.t)}</span></li>`).join('')}</ul>
     ${evs.length > shown.length ? `<div class="empty">另有 ${evs.length - shown.length} 次</div>` : ''}` : '<div class="empty">接下来 24 小时没有定时任务</div>';
+  const freqNote = frequent.length ? `<div class="empty">${esc(frequent.join('、'))}每 30 分钟跑一次，未列出</div>` : '';
   const cards = [...apps].sort(sortBy('R')).map(a => {
     const R = a.R, p = a.probe || a.site;
     const strip = R.strip.length ? `<div class="strip">${R.strip.map(x => `<i class="${x.c} ${x.s ? 's' : 'p'}" title="${esc(x.n)} ${clock(x.t)}"></i>`).join('')}</div>
@@ -491,7 +498,7 @@ function viewRun(apps){
           <div><b>${ago(a.pushed_at)}</b><span>仓库最后改动</span></div></div>
         ${content}${toggle(a)}</div>${openSet.has(a.repo) ? detailRun(a) : ''}</article>`;
   }).join('');
-  return `<section><h2>接下来 24 小时<small>${evs.length ? `共 ${evs.length} 次定时任务` : ''}</small></h2><div class="panel">${tl}</div></section>
+  return `<section><h2>接下来 24 小时<small>${evs.length ? `共 ${evs.length} 次定时任务` : ''}</small></h2><div class="panel">${tl}${freqNote}</div></section>
     <section><h2>各 App 运行情况<small>${apps.filter(a => (a.probe || a.site || {}).ok).length}/${apps.length} 个网页能打开</small></h2><div class="list">${cards}</div></section>`;
 }
 function detailRun(a){
