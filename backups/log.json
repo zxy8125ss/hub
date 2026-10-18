@@ -2,9 +2,9 @@
  "entries": [
   {
    "date": "2026-10-18",
-   "at": "2026-10-18T16:28+08:00",
+   "at": "2026-10-18T16:44+08:00",
    "tag": "backup-2026-10-18",
-   "total_bytes": 15329900,
+   "total_bytes": 15374769,
    "all_url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/all.zip",
    "apps": {
     "crosscheck": {
@@ -56,11 +56,11 @@
      "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/gomoku.zip"
     },
     "hub": {
-     "sha": "f8864b1",
+     "sha": "7ea420f",
      "files": 11,
      "skipped": 0,
      "skipped_bytes": 0,
-     "bytes": 30126,
+     "bytes": 30817,
      "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/hub.zip"
     },
     "leader-party-newchina": {
@@ -78,6 +78,14 @@
      "skipped_bytes": 0,
      "bytes": 187425,
      "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/life-radar.zip"
+    },
+    "Yaya": {
+     "sha": "ea4269e",
+     "files": 10,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 44086,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-10-18/Yaya.zip"
     },
     "zuoyou": {
      "sha": "77b1fda",
