@@ -1,0 +1,21 @@
+name: 定时器
+# GitHub 的 schedule 在这个仓库上不触发，用它兜底：等 29 分钟后启动下一次「状态检查」。
+# 每次状态检查结束都会重新启动定时器，并发组保证同一时间只有一个在等。
+on:
+  workflow_dispatch:
+permissions:
+  actions: write
+concurrency:
+  group: timer
+  cancel-in-progress: true
+jobs:
+  wait:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: 等 29 分钟
+        run: sleep 1740
+      - name: 启动状态检查
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run status.yml -R ${{ github.repository }}

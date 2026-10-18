@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
-  actions: read
+  actions: write
 concurrency:
   group: status
   cancel-in-progress: true
@@ -42,3 +42,8 @@ jobs:
           git add status.json App总览.xlsx
           git -c user.name=github-actions[bot] -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -q -m "状态 $(TZ=Asia/Shanghai date '+%m-%d %H:%M')"
           git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" status
+      - name: 排下一次检查
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run timer.yml -R ${{ github.repository }}
