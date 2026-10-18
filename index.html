@@ -10,11 +10,11 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="manifest" href="manifest.webmanifest">
 <style>
-/* 布局：顶部健康环 + 三个指标；24 小时任务时间轴；筛选；App 卡片（可展开详情） */
+/* 布局：顶部总判断 + 三块「运行 / 版本 / 备份」切换卡；下方按所选那块列出全部 App */
 :root{
   --bg:#F2EADF; --card:#FBF6EE; --sand:#E7DCCB; --ink:#29473A; --brown:#7A5233; --teal:#2A9D8F;
   --muted:#7d7466; --line:#e0d4c1; --track:#e3d8c6;
-  --ok:#2E7D5B; --okbg:#DCEBDF; --warn:#B07214; --warnbg:#F6E5C6; --bad:#B3402E; --badbg:#F5D7CF; --idle:#9a907f; --idlebg:#E9E1D4;
+  --ok:#2E7D5B; --okbg:#DCEBDF; --warn:#A8690F; --warnbg:#F6E5C6; --bad:#B3402E; --badbg:#F5D7CF; --idle:#8f8574; --idlebg:#E9E1D4;
   --serif:"Noto Serif SC","Songti SC","STSong","Source Han Serif SC",serif;
   --sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
   --mono:ui-monospace,"SF Mono",Menlo,monospace;
@@ -22,201 +22,175 @@
 @media (prefers-color-scheme:dark){:root{
   --bg:#1B231F; --card:#232E28; --sand:#2C3832; --ink:#ECE3D5; --brown:#D7AE84; --teal:#5FC4B7;
   --muted:#a69d8f; --line:#35423b; --track:#34413a;
-  --ok:#7CC89E; --okbg:#21402F; --warn:#E6B45F; --warnbg:#45381F; --bad:#F2907C; --badbg:#4B2A24; --idle:#8f877b; --idlebg:#2E3732; color-scheme:dark}}
+  --ok:#7CC89E; --okbg:#21402F; --warn:#E6B45F; --warnbg:#45381F; --bad:#F2907C; --badbg:#4B2A24; --idle:#9a9184; --idlebg:#2E3732; color-scheme:dark}}
 *{box-sizing:border-box}
 html,body{margin:0;overflow-x:hidden}
 body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased;
-  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(36px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
-  overflow-x:hidden}
+  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(36px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .wrap{max-width:720px;margin:0 auto;position:relative;overflow-x:clip}
-.blob{position:absolute;z-index:0;pointer-events:none;opacity:.55}
-.blob.a{top:-50px;right:-40px;width:200px} .blob.b{top:200px;left:-60px;width:160px}
+.blob{position:absolute;z-index:0;pointer-events:none;opacity:.55;top:-50px;right:-40px;width:200px}
 .wrap>*:not(.blob){position:relative;z-index:1}
 button{font:inherit;cursor:pointer;color:inherit}
 a{color:var(--teal)}
 :focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:8px}
 
-header{padding:20px 0 10px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{display:flex;flex-direction:column}
+header{padding:20px 0 12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 h1{font:600 25px/1.2 var(--serif);margin:0;letter-spacing:.03em}
 .sub{color:var(--muted);font-size:12.5px;margin-top:3px}
-#refresh{border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:10px 18px;font-weight:600;display:flex;gap:8px;align-items:center}
+#refresh{border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:10px 18px;font-weight:600;display:flex;gap:8px;align-items:center;flex:none}
 #refresh svg{width:15px;height:15px}
 #refresh.busy svg{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){#refresh.busy svg{animation:none}}
 
-/* 总览 */
-.hero{background:var(--card);border-radius:30px;padding:20px;display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;border:1px solid var(--line)}
-.ring{width:112px;height:112px;position:relative}
-.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
-.ring .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.ring .num b{font:600 28px/1 var(--serif);font-variant-numeric:tabular-nums}
-.ring .num small{font-size:11px;color:var(--muted);margin-top:4px}
-.verdict b{font:600 20px/1.35 var(--serif);display:block}
-.verdict p{margin:4px 0 0;font-size:13px;color:var(--muted)}
-.verdict.bad b{color:var(--bad)} .verdict.warn b{color:var(--warn)} .verdict.ok b{color:var(--ok)}
-.stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.stat{background:var(--sand);border-radius:18px;padding:10px 12px;min-width:0}
-.stat b{font:600 19px/1.2 var(--serif);display:block;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stat span{font-size:11.5px;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media (max-width:420px){.hero{grid-template-columns:1fr;justify-items:center;text-align:center}.ring{width:120px;height:120px}}
+/* 总判断 */
+.hero{background:var(--card);border-radius:28px;padding:18px;border:1px solid var(--line);display:grid;gap:14px}
+.verdict{display:flex;gap:12px;align-items:flex-start}
+.verdict .dot{width:12px;height:12px;border-radius:50%;flex:none;margin-top:8px;box-shadow:0 0 0 5px color-mix(in srgb,currentColor 18%,transparent);background:currentColor}
+.verdict b{font:600 19px/1.4 var(--serif);display:block}
+.verdict ul{margin:4px 0 0;padding:0;list-style:none;font-size:13px;color:var(--muted);display:grid;gap:2px}
+.verdict.ok{color:var(--ok)} .verdict.warn{color:var(--warn)} .verdict.bad{color:var(--bad)} .verdict.idle{color:var(--idle)}
+.verdict ul li{color:var(--ink);opacity:.8}
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pillar{border:2px solid transparent;background:var(--sand);border-radius:20px;padding:10px 12px;text-align:left;min-width:0;display:grid;gap:2px}
+.pillar[aria-pressed="true"]{background:var(--card);border-color:var(--ink)}
+.pillar .k{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.pillar .k i{width:8px;height:8px;border-radius:50%;flex:none}
+.pillar b{font:600 20px/1.2 var(--serif);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pillar span{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-ok{background:var(--ok)} .c-warn{background:var(--warn)} .c-bad{background:var(--bad)} .c-idle{background:var(--idle)}
 
 .note{background:var(--warnbg);color:var(--warn);border-radius:16px;padding:10px 14px;font-size:13px;margin-top:12px}
 
-/* 时间轴 */
 section{margin-top:22px}
 h2{font:600 16px/1.3 var(--serif);margin:0 0 10px;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-h2 small{font:12px var(--sans);color:var(--muted)}
-.timeline{background:var(--card);border-radius:24px;padding:16px 18px 12px;border:1px solid var(--line)}
+h2 small{font:12px var(--sans);color:var(--muted);white-space:nowrap}
+.panel{background:var(--card);border-radius:24px;padding:16px 18px;border:1px solid var(--line)}
+.panel p{margin:0;font-size:13.5px}
+.panel p+p{margin-top:6px}
+.panel .muted{color:var(--muted);font-size:12.5px}
+.btnlink{display:inline-flex;align-items:center;gap:6px;background:var(--ink);color:var(--bg);text-decoration:none;border-radius:999px;padding:8px 16px;font-size:13.5px;font-weight:600;margin-top:10px}
+
+/* 时间轴 */
 .axis{position:relative;height:46px}
 .axis .bar{position:absolute;left:0;right:0;top:20px;height:6px;border-radius:6px;background:var(--track)}
 .axis .night{position:absolute;top:20px;height:6px;background:color-mix(in srgb,var(--ink) 14%,transparent);border-radius:6px}
 .axis .tick{position:absolute;top:32px;font-size:10.5px;color:var(--muted);transform:translateX(-50%);font-variant-numeric:tabular-nums}
 .axis .ev{position:absolute;top:14px;width:18px;height:18px;margin-left:-9px;border-radius:50%;border:3px solid var(--card);background:var(--teal)}
-.axis .now{position:absolute;top:6px;width:2px;height:34px;background:var(--brown);border-radius:2px}
-.axis .now::after{content:"现在";position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--brown);white-space:nowrap}
+.axis .now{position:absolute;top:6px;left:0;width:2px;height:34px;background:var(--brown);border-radius:2px}
+.axis .now::after{content:"现在";position:absolute;top:-12px;left:0;font-size:10px;color:var(--brown);white-space:nowrap}
 .upcoming{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
-.upcoming li{display:grid;grid-template-columns:52px 1fr auto;gap:10px;font-size:13.5px;align-items:baseline}
-.upcoming .t{font-family:var(--mono);font-size:12.5px;color:var(--ink);font-weight:600}
+.upcoming li{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:10px;font-size:13.5px;align-items:baseline}
+.upcoming .t{font-family:var(--mono);font-size:12.5px;font-weight:600}
 .upcoming .w{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .upcoming .w span{color:var(--muted)}
 .upcoming .in{color:var(--muted);font-size:12px;white-space:nowrap}
 .empty{color:var(--muted);font-size:13px;padding:6px 0}
 
-/* 筛选 */
-.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.filters button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 14px;font-size:13px}
-.filters button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.filters button em{font-style:normal;opacity:.7;margin-left:4px;font-variant-numeric:tabular-nums}
-
 /* App 卡片 */
 .list{display:grid;gap:12px}
-.app{background:var(--card);border-radius:26px;border:1px solid var(--line);overflow:hidden}
-.app.bad{border-color:color-mix(in srgb,var(--bad) 60%,var(--line))}
+.app{background:var(--card);border-radius:24px;border:1px solid var(--line);overflow:hidden}
+.app.bad{border-color:color-mix(in srgb,var(--bad) 55%,var(--line))}
 .app.bad .head{background:linear-gradient(90deg,var(--badbg),transparent 70%)}
 .app.warn .head{background:linear-gradient(90deg,var(--warnbg),transparent 70%)}
-.head{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;padding:16px 18px 10px;width:100%;border:0;background:none;text-align:left}
-.icon{width:48px;height:48px;border-radius:14px;background:var(--sand);display:flex;align-items:center;justify-content:center;font:600 18px var(--serif);color:var(--brown);overflow:hidden}
-.icon{position:relative}.icon img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.head{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px 16px 10px;width:100%;border:0;background:none;text-align:left}
+.icon{width:44px;height:44px;border-radius:13px;background:var(--sand);display:flex;align-items:center;justify-content:center;font:600 17px var(--serif);color:var(--brown);overflow:hidden;position:relative}
+.icon img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .title{min-width:0}
-.title b{font:600 17px/1.3 var(--serif);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.title span{font-size:12px;color:var(--muted)}
+.title b{font:600 16.5px/1.3 var(--serif);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.title span{font-size:12px;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pill{font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
 .pill.ok{background:var(--okbg);color:var(--ok)} .pill.warn{background:var(--warnbg);color:var(--warn)} .pill.bad{background:var(--badbg);color:var(--bad)} .pill.idle{background:var(--idlebg);color:var(--idle)}
-.body{padding:0 18px 14px;display:grid;gap:10px}
+.ver{font-family:var(--mono);font-size:13px;font-weight:600;background:var(--sand);border-radius:8px;padding:3px 8px;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+.body{padding:0 16px 14px;display:grid;gap:10px}
+.alert{font-size:13px;font-weight:600;color:var(--bad)}
+.alert.w{color:var(--warn)}
 .strip{display:flex;gap:2px;height:22px;align-items:flex-end}
-.strip i{flex:1;max-width:9px;border-radius:3px;min-height:8px}
-.strip i.s{height:100%} .strip i.p{height:60%}
+.strip i{flex:1;max-width:9px;border-radius:3px}
+.strip i.s{height:100%} .strip i.p{height:55%}
 .strip i.ok{background:var(--ok)} .strip i.bad{background:var(--bad)} .strip i.run{background:var(--warn)} .strip i.cx{background:var(--idle);opacity:.5}
-.striplabel{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:-6px}
-.kv{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.kv div{min-width:0}
+.striplabel{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted);margin-top:-6px}
+.kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .kv b{display:block;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kv span{font-size:11px;color:var(--muted)}
-@media (max-width:420px){.kv{grid-template-columns:repeat(2,1fr)}}
-.content{background:var(--sand);border-radius:16px;padding:10px 12px;font-size:13px;display:grid;gap:4px}
-.content .lab{font-size:11px;color:var(--brown);font-weight:600;letter-spacing:.06em}
-.content .warnline{color:var(--warn)}
+.kv span{font-size:11px;color:var(--muted);display:block;white-space:nowrap}
+@media (max-width:420px){.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.box{background:var(--sand);border-radius:16px;padding:10px 12px;font-size:13px;display:grid;gap:4px;min-width:0}
+.box .lab{font-size:11px;color:var(--brown);font-weight:600;letter-spacing:.06em;display:flex;justify-content:space-between;gap:8px}
+.box .lab em{font-style:normal;font-weight:400;color:var(--muted);letter-spacing:0}
 .days{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
 .day{background:var(--card);border-radius:10px;padding:4px 7px;font-size:11px;text-align:center;line-height:1.35}
 .day b{display:block;font-size:11.5px}
-.day .y{color:var(--ok)} .day .n{color:var(--muted)}
-.alert{color:var(--bad);font-size:13px;font-weight:600}
-.alert.w{color:var(--warn)}
+.y{color:var(--ok)} .n{color:var(--muted)}
+.ups{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.ups li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;font-size:13px}
+.ups .d{font-family:var(--mono);font-size:11.5px;color:var(--muted);padding-top:1px}
+.ups .m{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.dl a{font-weight:600;text-decoration:none;white-space:nowrap}
+.chip{font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.chip.local{background:var(--warnbg);color:var(--warn)} .chip.cloud{background:var(--okbg);color:var(--ok)} .chip.none,.chip.minor,.chip.unknown{background:var(--idlebg);color:var(--idle)}
+.hist{display:flex;gap:3px;align-items:flex-end;height:18px}
+.hist i{width:8px;border-radius:2px;background:var(--teal);opacity:.75}
+.hist i.same{opacity:.3}
 
-.detail{border-top:1px dashed var(--line);padding:12px 18px 16px;display:grid;gap:14px}
+.toggle{border:0;background:none;color:var(--muted);font-size:12.5px;padding:0;display:flex;gap:4px;align-items:center;justify-self:start}
+.chev{transition:transform .2s}
+.app[data-open="1"] .chev{transform:rotate(180deg)}
+.detail{border-top:1px dashed var(--line);padding:12px 16px 16px;display:grid;gap:14px}
 .wf h3{font:600 14px/1.3 var(--sans);margin:0 0 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .wf h3 i{width:8px;height:8px;border-radius:50%;display:inline-block}
 .wf h3 small{font-weight:400;color:var(--muted);font-size:12px}
 .runs{list-style:none;margin:0;padding:0;display:grid;gap:3px}
-.runs li{display:grid;grid-template-columns:86px 44px 1fr auto;gap:8px;font-size:12.5px;align-items:baseline}
+.runs li{display:grid;grid-template-columns:82px 40px minmax(0,1fr) auto;gap:8px;font-size:12.5px;align-items:baseline}
 .runs .tm{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
 .runs .ev{color:var(--muted)}
-.runs .rs{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.runs .rs{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none}
 .runs .rs.bad{color:var(--bad);font-weight:600} .runs .rs.ok{color:var(--ok)}
 .runs .du{color:var(--muted);font-variant-numeric:tabular-nums;font-size:11.5px}
-.why{font-size:12.5px;background:var(--badbg);color:var(--bad);border-radius:12px;padding:8px 10px;margin-top:6px}
+.why{font-size:12.5px;background:var(--badbg);color:var(--bad);border-radius:12px;padding:8px 10px;margin-bottom:6px}
 .links{display:flex;gap:16px;flex-wrap:wrap;font-size:13px}
 .links a{text-decoration:none;font-weight:600}
-.chev{transition:transform .2s;color:var(--muted)}
-.app[data-open="1"] .chev{transform:rotate(180deg)}
-.toggle{border:0;background:none;color:var(--muted);font-size:12.5px;padding:0;display:flex;gap:4px;align-items:center}
-
-footer{margin-top:26px;color:var(--muted);font-size:12px;display:grid;gap:8px;justify-items:center;text-align:center}
-.quota{width:160px;height:6px;border-radius:6px;background:var(--track);overflow:hidden}
-.quota i{display:block;height:100%;background:var(--teal)}
-.skeleton{height:150px;border-radius:26px;background:var(--sand);opacity:.6}
+footer{margin-top:26px;color:var(--muted);font-size:12px;text-align:center;line-height:1.7}
+.skeleton{height:140px;border-radius:24px;background:var(--sand);opacity:.6}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <svg class="blob a" viewBox="0 0 200 200" aria-hidden="true"><path fill="var(--sand)" d="M44.7,-58.6C57.1,-47.2,66,-32.7,70.3,-16.6C74.6,-0.5,74.3,17.2,66.6,30.8C58.9,44.5,43.9,54.1,27.7,61.4C11.4,68.7,-6.1,73.6,-22.6,69.8C-39.1,66,-54.6,53.4,-63.9,37.6C-73.2,21.8,-76.3,2.8,-71.4,-13.6C-66.5,-30,-53.6,-43.8,-39.2,-54.9C-24.8,-66,-12.4,-74.4,2.2,-77C16.8,-79.6,32.3,-70.1,44.7,-58.6Z" transform="translate(100 100)"/></svg>
-  <svg class="blob b" viewBox="0 0 200 200" aria-hidden="true"><path fill="color-mix(in srgb,var(--teal) 16%,transparent)" d="M38.5,-52.5C49.6,-45,57.9,-33.4,63.1,-20C68.3,-6.6,70.3,8.6,65.4,21.3C60.5,34,48.6,44.3,35.4,52.5C22.2,60.7,7.6,66.9,-7.4,67.4C-22.4,67.9,-37.8,62.7,-48.9,52.7C-60,42.7,-66.8,27.9,-68.4,12.6C-70,-2.7,-66.4,-18.5,-58.3,-31C-50.2,-43.5,-37.6,-52.7,-24.6,-59.4C-11.6,-66.1,1.8,-70.3,14.4,-67.8C27,-65.3,27.4,-60,38.5,-52.5Z" transform="translate(100 100)"/></svg>
-
+  <svg class="blob" viewBox="0 0 200 200" aria-hidden="true"><path fill="var(--sand)" d="M44.7,-58.6C57.1,-47.2,66,-32.7,70.3,-16.6C74.6,-0.5,74.3,17.2,66.6,30.8C58.9,44.5,43.9,54.1,27.7,61.4C11.4,68.7,-6.1,73.6,-22.6,69.8C-39.1,66,-54.6,53.4,-63.9,37.6C-73.2,21.8,-76.3,2.8,-71.4,-13.6C-66.5,-30,-53.6,-43.8,-39.2,-54.9C-24.8,-66,-12.4,-74.4,2.2,-77C16.8,-79.6,32.3,-70.1,44.7,-58.6Z" transform="translate(100 100)"/></svg>
   <header>
-    <div class="brand"><h1>应用总控台</h1><div class="sub" id="when">正在检查…</div></div>
-    <button id="refresh" type="button" aria-label="重新检查"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>检查</button>
+    <div><h1>应用总控台</h1><div class="sub" id="when">正在读取…</div></div>
+    <button id="refresh" type="button" aria-label="立即检查"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>检查</button>
   </header>
 
-  <div class="hero" id="hero">
-    <div class="ring" id="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="none" stroke="var(--track)" stroke-width="12"/></svg><div class="num"><b>—</b><small>7 天成功率</small></div></div>
-    <div class="verdict" id="verdict"><b>正在检查各 App</b><p>读取 GitHub 自动任务和各 App 的数据</p></div>
-    <div class="stats" id="stats"></div>
+  <div class="hero">
+    <div class="verdict idle" id="verdict"><span class="dot"></span><div><b>正在读取各 App 状态</b></div></div>
+    <div class="pillars" id="pillars" role="tablist" aria-label="查看"></div>
   </div>
   <div class="note" id="note" hidden></div>
 
-  <section>
-    <h2>接下来 24 小时<small id="tlsum"></small></h2>
-    <div class="timeline" id="timeline"><div class="empty">正在读取各 App 的定时配置…</div></div>
-  </section>
+  <main id="view"><div class="list" style="margin-top:22px"><div class="skeleton"></div><div class="skeleton"></div></div></main>
 
-  <section>
-    <h2>全部 App<small id="appsum"></small></h2>
-    <div class="filters" id="filters" role="group" aria-label="筛选"></div>
-    <div class="list" id="list"><div class="skeleton"></div><div class="skeleton"></div></div>
-  </section>
-
-  <footer>
-    <div class="quota" id="quota" hidden><i></i></div>
-    <div id="foot">新仓库只要开了 GitHub Pages，会自动出现在这里</div>
-  </footer>
+  <footer id="foot"></footer>
 </div>
 
 <script>
-const BUILD = '2026-10-16-2235';
-// 自动更新：线上版本号和当前页面不同就刷新一次（GitHub Pages 会缓存页面 10 分钟，手机主屏幕 App 也会缓存）
-(async () => {
+const BUILD = '2026-10-18-1700';
+(async () => {   // 自动更新：线上有新版本就刷新一次
   try {
-    const r = await fetch('version.json?t=' + Date.now(), {cache:'no-store'});
-    const v = (await r.json()).build;
-    if (v && v !== BUILD && sessionStorage.getItem('hub-reloaded') !== v) {
-      sessionStorage.setItem('hub-reloaded', v);
-      location.replace(location.pathname + '?v=' + v);
-    }
+    const v = (await (await fetch('version.json?t=' + Date.now(), {cache:'no-store'})).json()).build;
+    if (v && v !== BUILD && sessionStorage.getItem('hub-reloaded') !== v) { sessionStorage.setItem('hub-reloaded', v); location.replace(location.pathname + '?v=' + v); }
   } catch (e) {}
 })();
+
 const OWNER = 'zxy8125ss';
-const SELF = 'hub';
-const SITE = `https://${OWNER}.github.io/`;
-const KNOWN = {
-  'game-on':   {name:'Game On', desc:'比赛日程', maxGap:{'更新赛程':8}, adapter:'gameon'},
-  'life-radar':{name:'生活雷达', desc:'每日信息核查', adapter:'radar'},
-  'fund-diary':{name:'基金日记', desc:'预测与复盘', adapter:'fund'},
-  'forge':     {name:'Forge', desc:'习惯与时间'},
-  'leader-party-newchina':{name:'领袖·政党·新中国', desc:'历史时间轴'},
-  'crosscheck':{name:'Crosscheck', desc:'人生指南对照'},
-  'ease':      {name:'Ease', desc:'体重管理'}
-};
+const STATUS_URL = `https://raw.githubusercontent.com/${OWNER}/hub/status/status.json`;
 const DEFAULT_GAP = 27;
-const CACHE = 'hub-cache-v2', YML = 'hub-yml-v1', FILTER = 'hub-filter';
-const STALE_MIN = 5;
 const BAD = ['failure','timed_out','startup_failure','action_required'];
 const IGNORE = ['cancelled','skipped','neutral','stale'];
-const JOBNAME = {'pages build and deployment':'发布网页','Deploy to gh-pages':'发布网页','部署':'发布网页','部署到 GitHub Pages':'发布网页'};
-const EVENT = {schedule:'定时',push:'提交',workflow_dispatch:'手动',issues:'App 提交',dynamic:'发布',repository_dispatch:'触发'};
+const JOBNAME = {'pages build and deployment':'发布网页','Deploy to gh-pages':'发布网页','部署':'发布网页','部署到 GitHub Pages':'发布网页','Deploy to GitHub Pages':'发布网页','pages':'发布网页'};
+const EVENT = {schedule:'定时',push:'提交',workflow_dispatch:'手动',issues:'App提交',dynamic:'发布',workflow_run:'联动',repository_dispatch:'触发'};
 const RANK = {bad:0,warn:1,ok:2,idle:3};
-const LABEL = {bad:'失败', warn:'留意', ok:'正常', idle:'静态'};
+const VIEWS = {run:'运行', ver:'版本', bak:'备份'};
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -231,13 +205,16 @@ function ago(t){
 }
 function until(t){
   const m = Math.round((new Date(t) - Date.now()) / 60000);
-  if (m < 60) return m + ' 分钟后'; const h = Math.floor(m/60);
-  return h + ' 小时' + (m%60 ? ' ' + (m%60) + ' 分钟' : '') + '后';
+  if (m < 60) return m + ' 分钟后'; const h = Math.floor(m / 60);
+  return h + ' 小时' + (m % 60 ? ' ' + (m % 60) + ' 分钟' : '') + '后';
 }
 const fmt = (t, o) => new Date(t).toLocaleString('zh-CN', {timeZone:'Asia/Shanghai', hour12:false, ...o});
 const clock = t => fmt(t, {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
 const hm = t => fmt(t, {hour:'2-digit', minute:'2-digit'});
-const dur = s => s == null ? '—' : s < 60 ? Math.round(s) + ' 秒' : (s/60).toFixed(s < 600 ? 1 : 0) + ' 分';
+const md = t => fmt(t, {month:'numeric', day:'numeric'});
+const dur = s => s == null ? '—' : s < 60 ? Math.round(s) + ' 秒' : (s / 60).toFixed(s < 600 ? 1 : 0) + ' 分钟';
+const size = b => b == null ? '—' : b < 1024 * 1024 ? Math.max(1, Math.round(b / 1024)) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
+const isDeploy = r => JOBNAME[r.name] === '发布网页' || /deploy|pages/i.test(r.path || '');
 
 /* ---------- cron（UTC） ---------- */
 function field(f, lo, hi){
@@ -268,31 +245,17 @@ function nextFires(c, from, to){
   return out;
 }
 
-/* ---------- 网络 ---------- */
-let rateLeft = null, rateReset = null, rateLimit = 60;
+/* ---------- 读取 ---------- */
+let rateLeft = null, rateReset = null;
 async function gh(path){
   const r = await fetch('https://api.github.com' + path, {headers:{Accept:'application/vnd.github+json'}});
-  const h = k => r.headers.get(k);
-  if (h('x-ratelimit-remaining') !== null) rateLeft = +h('x-ratelimit-remaining');
-  if (h('x-ratelimit-limit')) rateLimit = +h('x-ratelimit-limit');
-  if (h('x-ratelimit-reset')) rateReset = +h('x-ratelimit-reset') * 1000;
+  if (r.headers.get('x-ratelimit-remaining') !== null) rateLeft = +r.headers.get('x-ratelimit-remaining');
+  if (r.headers.get('x-ratelimit-reset')) rateReset = +r.headers.get('x-ratelimit-reset') * 1000;
   if (r.status === 403 || r.status === 429) { const e = new Error('rate'); e.rate = true; throw e; }
   if (!r.ok) throw new Error('HTTP ' + r.status);
   return r.json();
 }
-async function workflowCrons(repo, path){
-  const cache = store.get(YML) || {}; const key = repo + '/' + path;
-  if (cache[key] && Date.now() - cache[key].at < 12 * 3600e3) return cache[key].crons;
-  try {
-    const r = await fetch(`https://raw.githubusercontent.com/${OWNER}/${repo}/HEAD/${path}`);
-    if (!r.ok) throw 0;
-    const txt = await r.text();
-    const crons = [...txt.matchAll(/cron:\s*['"]([^'"]+)['"]/g)].map(m => m[1]);
-    cache[key] = {at: Date.now(), crons}; store.set(YML, cache);
-    return crons;
-  } catch (e) { return cache[key] ? cache[key].crons : []; }
-}
-async function siteProbe(url){
+async function probe(url){
   const t0 = performance.now();
   try {
     const r = await fetch(url, {cache:'no-store'});
@@ -303,12 +266,12 @@ async function siteProbe(url){
       const m = html.match(/rel=["']apple-touch-icon["'][^>]*href=["']([^"']+)["']/i) || html.match(/href=["']([^"']+)["'][^>]*rel=["']apple-touch-icon["']/i);
       if (m) icon = new URL(m[1], url).href;
     }
-    return {up: r.ok, code: r.status, ms, icon};
-  } catch (e) { return {up:false, code:0, ms:null, icon:null}; }
+    return {ok:r.ok, code:r.status, ms, icon};
+  } catch (e) { return {ok:false, code:0, ms:null, icon:null}; }
 }
 const getJSON = async u => { const r = await fetch(u + '?t=' + Date.now()); if (!r.ok) throw 0; return r.json(); };
 
-/* ---------- 内容层检查 ---------- */
+/* 各 App 自己的数据是否按时更新 */
 const ADAPTERS = {
   async gameon(url){
     const s = await getJSON(url + 'data/schedule.json');
@@ -318,10 +281,8 @@ const ADAPTERS = {
     const now = Date.now(), week = now + 7 * 864e5;
     const t = x => x.bj ? new Date(x.bj.replace(' ', 'T') + ':00+08:00').getTime() : x.date ? new Date(x.date + 'T12:00:00+08:00').getTime() : NaN;
     const up = (s.matches || []).filter(x => !x.result && t(x) > now - 2 * 3600e3).sort((a, b) => t(a) - t(b));
-    const wk = up.filter(x => t(x) < week).length;
     lines.push(`赛程更新于 ${ago(s.updatedAt)} · ${esc(s.note || '')}`);
-    if (up[0]) lines.push(`下一场：<b>${esc(up[0].title)}</b> · ${up[0].bj ? clock(t(up[0])) : esc(up[0].date)}`);
-    lines.push(`未来 7 天 ${wk} 场 · 赛程库共 ${(s.matches || []).length} 场`);
+    lines.push(`未来 7 天 ${up.filter(x => t(x) < week).length} 场${up[0] ? ` · 下一场 ${esc(up[0].title)}` : ''}`);
     if (now - new Date(s.updatedAt) > 14 * 3600e3) warn.push('赛程超过 14 小时没更新');
     return {lines, warn};
   },
@@ -329,255 +290,287 @@ const ADAPTERS = {
     const r = await getJSON(url + 'data/runs.json');
     const log = [...(r.log || [])].sort((a, b) => a.date < b.date ? 1 : -1), last = log[0] || {};
     const today = bjDate(Date.now()), lines = [], warn = [];
-    const bjHour = new Date(Date.now() + BJ).getUTCHours();
-    lines.push(`最近一次每日更新：${esc(r.last_daily)}${last.added != null ? ` · 新增 <b>${last.added}</b> 条` : ''}`);
-    if (last.note) lines.push(esc(last.note));
-    const okDays = log.slice(0, 7).filter(x => x.ok).length;
-    lines.push(`最近 ${Math.min(7, log.length)} 次更新成功 ${okDays} 次`);
+    lines.push(`最近一次每日更新 ${esc(r.last_daily)}${last.added != null ? ` · 新增 ${last.added} 条` : ''}`);
+    lines.push(`最近 ${Math.min(7, log.length)} 次更新成功 ${log.slice(0, 7).filter(x => x.ok).length} 次`);
     if (last.ok === false) warn.push('最近一次每日更新没有成功');
     if (last.date === today && last.added != null && last.added < 10) warn.push(`今天只找到 ${last.added} 条，没达到每天 10 条`);
-    if (r.last_daily !== today && bjHour >= 12) warn.push('今天的每日信息还没更新');
+    if (r.last_daily !== today && new Date(Date.now() + BJ).getUTCHours() >= 12) warn.push('今天的每日信息还没更新');
     return {lines, warn};
   },
   async fund(url){
     const d = await getJSON(url + 'data/index.json');
     const days = Object.keys(d.days || {}).sort().slice(-5);
-    const lines = [], warn = [];
     const mark = (v, y, n) => `<span class="${v ? 'y' : 'n'}">${v ? y : n}</span>`;
     const html = days.map(k => { const x = d.days[k];
-      return `<div class="day"><b>${k.slice(5).replace('-', '/')}</b>${mark(x.user,'你填了','未填')}<br>${mark(x.result,'已结算','未结算')} · ${mark(x.review,'复盘','—')}</div>`; }).join('');
-    lines.push(`最近 ${days.length} 个交易日`);
-    lines.push(`<div class="days">${html}</div>`);
-    const past = days.filter(k => k < bjDate(Date.now()));
-    const missRes = past.filter(k => !d.days[k].result);
-    if (missRes.length) warn.push(`${missRes.map(k => k.slice(5)).join('、')} 还没结算`);
-    return {lines, warn};
+      return `<div class="day"><b>${k.slice(5).replace('-', '/')}</b>${mark(x.result, '已结算', '未结算')}<br>${mark(x.review, '已复盘', '未复盘')}</div>`; }).join('');
+    const warn = [], missing = days.filter(k => k < bjDate(Date.now()) && !d.days[k].result);
+    if (missing.length) warn.push(`${missing.map(k => k.slice(5)).join('、')} 还没结算`);
+    return {lines:[`最近 ${days.length} 个交易日的结算与复盘`, `<div class="days">${html}</div>`], warn};
   }
 };
 
 /* ---------- 判断 ---------- */
-function analyse(repo, runs, cronMap, site, content){
-  const key = repo.name.toLowerCase(), known = KNOWN[key] || {};
+function judgeRun(a){
   const byWf = new Map();
-  for (const run of runs) {
-    if (!byWf.has(run.workflow_id)) byWf.set(run.workflow_id, {name: JOBNAME[run.name] || run.name, path: run.path, runs: []});
-    byWf.get(run.workflow_id).runs.push(run);
+  for (const run of a.runs || []) {
+    if (!byWf.has(run.wid)) byWf.set(run.wid, {name: JOBNAME[run.name] || run.name, path: run.path, runs: []});
+    byWf.get(run.wid).runs.push(run);
   }
   const wfs = [];
   for (const wf of byWf.values()) {
     const latest = wf.runs[0];
     const done = wf.runs.find(r => r.status === 'completed' && !IGNORE.includes(r.conclusion));
     const sched = wf.runs.find(r => r.event === 'schedule');
-    const crons = cronMap[wf.path] || [];
+    const crons = (a.crons || {})[wf.path] || [];
     let state = 'ok', why = '';
     if (done && BAD.includes(done.conclusion)) {
-      state = 'bad';
-      let n = 0; for (const r of wf.runs.filter(r => r.status === 'completed' && !IGNORE.includes(r.conclusion))) { if (BAD.includes(r.conclusion)) n++; else break; }
+      state = 'bad'; let n = 0;
+      for (const r of wf.runs.filter(r => r.status === 'completed' && !IGNORE.includes(r.conclusion))) { if (BAD.includes(r.conclusion)) n++; else break; }
       why = n > 1 ? `连续失败 ${n} 次` : '最近一次运行失败';
-    } else if (!done && latest && latest.status !== 'completed') state = 'warn';
-    if (sched && state !== 'bad') {
-      const gap = (known.maxGap && known.maxGap[wf.name]) || DEFAULT_GAP;
+    }
+    if (sched && state !== 'bad' && crons.length) {
+      const gap = (a.maxGap && a.maxGap[wf.name]) || DEFAULT_GAP;
       const hrs = (Date.now() - new Date(sched.created_at)) / 3600e3;
       if (hrs > gap) { state = 'warn'; why = `定时任务 ${Math.floor(hrs)} 小时没跑了`; }
     }
-    if (latest && latest.status !== 'completed' && state !== 'bad') why = why || '正在运行';
-    const week = wf.runs.filter(r => Date.now() - new Date(r.created_at) < 7 * 864e5 && r.status === 'completed' && !IGNORE.includes(r.conclusion));
-    const durs = wf.runs.filter(r => r.status === 'completed' && r.run_started_at).map(r => (new Date(r.updated_at) - new Date(r.run_started_at)) / 1000).filter(x => x >= 0 && x < 7200);
-    const parsed = crons.map(parseCron).filter(Boolean);
-    const next = parsed.flatMap(c => nextFires(c, Date.now(), Date.now() + 8 * 864e5)).sort((a, b) => a - b);
-    wfs.push({name: wf.name, path: wf.path, state, why, latest, failRun: state === 'bad' ? done : null,
-      scheduled: crons.length > 0 || !!sched, crons, next: next[0] || null, nextList: next.filter(t => t - Date.now() < 864e5),
-      week: week.length, weekOk: week.filter(r => !BAD.includes(r.conclusion)).length,
-      avg: durs.length ? durs.slice(0, 10).reduce((a, b) => a + b, 0) / Math.min(10, durs.length) : null,
-      runs: wf.runs.slice(0, 8)});
+    if (latest && latest.status !== 'completed' && state === 'ok') why = '正在运行';
+    const fin = wf.runs.filter(r => r.status === 'completed' && !IGNORE.includes(r.conclusion) && Date.now() - new Date(r.created_at) < 7 * 864e5);
+    const durs = wf.runs.filter(r => r.status === 'completed' && r.started).map(r => (new Date(r.updated_at) - new Date(r.started)) / 1000).filter(x => x >= 0 && x < 7200).slice(0, 10);
+    const next = crons.map(parseCron).filter(Boolean).flatMap(c => nextFires(c, Date.now(), Date.now() + 8 * 864e5)).sort((x, y) => x - y);
+    wfs.push({name: wf.name, state, why, failRun: state === 'bad' ? done : null, scheduled: crons.length > 0,
+      next: next[0] || null, nextList: next.filter(t => t - Date.now() < 864e5),
+      week: fin.length, weekOk: fin.filter(r => !BAD.includes(r.conclusion)).length,
+      avg: durs.length ? durs.reduce((x, y) => x + y, 0) / durs.length : null, runs: wf.runs.slice(0, 8)});
   }
-  wfs.sort((a, b) => RANK[a.state] - RANK[b.state] || b.scheduled - a.scheduled);
-  let state = wfs.reduce((s, j) => RANK[j.state] < RANK[s] ? j.state : s, wfs.length ? 'ok' : 'idle');
+  wfs.sort((x, y) => RANK[x.state] - RANK[y.state] || y.scheduled - x.scheduled);
+  let state = wfs.reduce((s, w) => RANK[w.state] < RANK[s] ? w.state : s, wfs.length ? 'ok' : 'idle');
   const alerts = wfs.filter(w => w.why && w.state !== 'ok').map(w => ({level: w.state, text: `${w.name}：${w.why}`}));
-  if (site && !site.up) { state = 'bad'; alerts.unshift({level:'bad', text: `网页打不开（${site.code || '无响应'}）`}); }
-  if (content && content.warn) for (const w of content.warn) { alerts.push({level:'warn', text:w}); if (state === 'ok' || state === 'idle') state = 'warn'; }
-  if (content && content.error && state === 'ok') { alerts.push({level:'warn', text:'没读到这个 App 的数据文件'}); state = 'warn'; }
-  const strip = runs.filter(r => Date.now() - new Date(r.created_at) < 14 * 864e5).slice(0, 40).reverse();
-  const week = runs.filter(r => Date.now() - new Date(r.created_at) < 7 * 864e5 && r.status === 'completed' && !IGNORE.includes(r.conclusion));
-  return {
-    repo: repo.name, key, title: known.name || repo.name, desc: known.desc || repo.description || '',
-    url: repo.homepage || `${SITE}${repo.name}/`, actions: `https://github.com/${OWNER}/${repo.name}/actions`,
-    pushed: repo.pushed_at, state, alerts, wfs, site, content,
-    strip: strip.map(r => ({c: r.status !== 'completed' ? 'run' : BAD.includes(r.conclusion) ? 'bad' : IGNORE.includes(r.conclusion) ? 'cx' : 'ok', s: r.event === 'schedule', t: r.created_at, n: JOBNAME[r.name] || r.name})),
-    week: week.length, weekOk: week.filter(r => !BAD.includes(r.conclusion)).length,
-    today: runs.filter(r => bjDate(r.created_at) === bjDate(Date.now())).length,
-    auto: wfs.some(w => w.scheduled), next: wfs.map(w => w.next).filter(Boolean).sort((a, b) => a - b)[0] || null
-  };
+  const site = a.probe || a.site;
+  if (site && !site.ok) { state = 'bad'; alerts.unshift({level:'bad', text:`网页打不开（${site.code || '无响应'}）`}); }
+  for (const w of (a.content && a.content.warn) || []) { alerts.push({level:'warn', text:w}); if (RANK[state] > 1) state = 'warn'; }
+  if (a.runs == null) { alerts.push({level:'warn', text:'没读到任务记录'}); if (RANK[state] > 1) state = 'warn'; }
+  const recent = (a.runs || []).filter(r => Date.now() - new Date(r.created_at) < 14 * 864e5);
+  const fin = recent.filter(r => r.status === 'completed' && !IGNORE.includes(r.conclusion) && Date.now() - new Date(r.created_at) < 7 * 864e5);
+  return {state, alerts, wfs,
+    strip: recent.slice(0, 40).reverse().map(r => ({c: r.status !== 'completed' ? 'run' : BAD.includes(r.conclusion) ? 'bad' : IGNORE.includes(r.conclusion) ? 'cx' : 'ok', s: r.event === 'schedule', t: r.created_at, n: JOBNAME[r.name] || r.name})),
+    week: fin.length, weekOk: fin.filter(r => !BAD.includes(r.conclusion)).length,
+    today: (a.runs || []).filter(r => bjDate(r.created_at) === bjDate(Date.now())).length,
+    todayFail: (a.runs || []).filter(r => bjDate(r.created_at) === bjDate(Date.now()) && BAD.includes(r.conclusion)).length,
+    auto: wfs.some(w => w.scheduled), next: wfs.map(w => w.next).filter(Boolean).sort((x, y) => x - y)[0] || null};
 }
 
-/* ---------- 检查流程 ---------- */
-let current = null, filter = store.get(FILTER) || 'all', openSet = new Set();
-async function check(){
+function judgeVer(a){
+  const head = a.deployIgnoreBot ? a.headHuman : a.head;
+  const deploys = (a.runs || []).filter(isDeploy);
+  const last = deploys[0], ok = deploys.find(r => r.status === 'completed' && r.conclusion === 'success');
+  const label = a.version && a.version.label ? a.version.label : (a.headHuman ? fmt(a.headHuman.date, {year:'numeric', month:'2-digit', day:'2-digit'}).replace(/\//g, '.') : '—');
+  const labelNote = a.version && a.version.label ? a.version.source : '没有标版本号，按最近一次功能更新的日期显示';
+  let state = 'ok', text = '线上已是最新';
+  if (!last) { state = 'idle'; text = '没有发布记录'; }
+  else if (last.status !== 'completed') { state = 'warn'; text = '正在发布新版本'; }
+  else if (BAD.includes(last.conclusion)) { state = 'bad'; text = '最近一次发布失败，线上还是旧版'; }
+  else if (head && new Date(last.created_at) < new Date(head.date) - 60e3) {
+    const mins = (Date.now() - new Date(head.date)) / 60000;
+    state = mins > 30 ? 'warn' : 'ok'; text = mins > 30 ? `最新提交 ${ago(head.date)}，还没发布上线` : '最新提交正在等待发布';
+  }
+  return {state, text, label, labelNote, deployedAt: ok ? ok.updated_at : null, updates: a.updates || [], autoWeek: a.autoWeek || 0, humanWeek: a.humanWeek || 0};
+}
+
+function judgeBak(a){
+  const b = a.backup && a.backup.latest;
+  let state = 'ok', text;
+  if (!b) { state = 'warn'; text = '还没有整库快照'; }
+  else if (b.error) { state = 'bad'; text = '最近一次快照失败'; }
+  else if (Date.now() - new Date(b.at) > 36 * 3600e3) { state = 'warn'; text = `快照已有 ${ago(b.at)}，每日备份可能没跑`; }
+  else text = `${md(b.at)} ${hm(b.at)} 已快照`;
+  const hist = (a.backup && a.backup.history) || [];
+  return {state, text, latest: b, hist, changed: hist.length > 1 ? hist[0].sha !== hist[1].sha : null};
+}
+
+/* ---------- 流程 ---------- */
+let data = null, view = store.get('hub-view') || 'run', openSet = new Set(), fetchedAt = null, liveAt = null;
+async function load(live){
   const btn = $('#refresh'); btn.disabled = true; btn.classList.add('busy');
+  const note = $('#note'); note.hidden = true;
   try {
-    const repos = (await gh(`/users/${OWNER}/repos?per_page=100&sort=pushed`))
-      .filter(r => r.name.toLowerCase() !== SELF && !r.fork && !r.archived && (r.has_pages || KNOWN[r.name.toLowerCase()]));
-    const apps = await Promise.all(repos.map(async repo => {
-      let url = repo.homepage || `${SITE}${repo.name}/`; if (!url.endsWith('/')) url += '/';
-      const ad = ADAPTERS[(KNOWN[repo.name.toLowerCase()] || {}).adapter];
-      const [runsRes, site, content] = await Promise.all([
-        gh(`/repos/${OWNER}/${repo.name}/actions/runs?per_page=60`).then(d => d.workflow_runs || []).catch(e => { if (e.rate) throw e; return null; }),
-        siteProbe(url),
-        ad ? ad(url).catch(() => ({error:true, lines:[], warn:[]})) : Promise.resolve(null)
-      ]);
-      const runs = runsRes || [];
-      const paths = [...new Set(runs.map(r => r.path).filter(p => p && p.startsWith('.github/workflows/')))];
-      const cronMap = {};
-      await Promise.all(paths.map(async p => { cronMap[p] = await workflowCrons(repo.name, p); }));
-      const a = analyse(repo, runs, cronMap, site, content);
-      if (!runsRes) { a.alerts.push({level:'warn', text:'这次没读到任务记录'}); if (a.state === 'ok') a.state = 'warn'; }
-      return a;
-    }));
-    current = {at: Date.now(), apps};
-    store.set(CACHE, current);
-    render(); $('#note').hidden = true;
+    const st = await getJSON(STATUS_URL);
+    fetchedAt = Date.now();
+    const apps = st.apps;
+    const extra = apps.map(async a => {
+      const ad = ADAPTERS[a.adapter];
+      const [p, c] = await Promise.all([probe(a.url), ad ? ad(a.url).catch(() => ({lines:[], warn:['没读到这个 App 的数据文件']})) : null]);
+      a.probe = p; a.content = c;
+    });
+    if (live) {
+      try {
+        await Promise.all(apps.map(async a => { const d = await gh(`/repos/${OWNER}/${a.repo}/actions/runs?per_page=50`);
+          a.runs = (d.workflow_runs || []).map(r => ({id:r.id, wid:r.workflow_id, name:r.name, path:r.path, event:r.event, status:r.status, conclusion:r.conclusion,
+            created_at:r.created_at, started:r.run_started_at, updated_at:r.updated_at, url:r.html_url, sha:r.head_sha, msg:(r.head_commit && r.head_commit.message || '').split('\n')[0]})); }));
+        liveAt = Date.now();
+      } catch (e) {
+        note.hidden = false;
+        note.textContent = e.rate ? `实时检查的次数这小时用完了（约 ${rateReset ? Math.max(1, Math.ceil((rateReset - Date.now()) / 60000)) : 60} 分钟后恢复），下面是服务器 ${ago(st.generated_at)}的检查结果。` : '实时检查没连上 GitHub，下面是服务器最近一次的检查结果。';
+      }
+    }
+    await Promise.all(extra);
+    data = st;
+    store.set('hub-last', {at: Date.now(), st});
+    if (Date.now() - new Date(st.generated_at) > 90 * 60000) { note.hidden = false; note.textContent = `服务器的定时检查已经 ${ago(st.generated_at)}没更新了，总控台自己的「状态检查」任务可能停了。`; }
+    render();
   } catch (e) {
-    const note = $('#note'); note.hidden = false;
-    note.textContent = e.rate
-      ? `GitHub 每小时的免费查询次数用完了，约 ${rateReset ? Math.max(1, Math.ceil((rateReset - Date.now()) / 60000)) : 60} 分钟后恢复。下面是上次的结果。`
-      : '连不上 GitHub，检查一下网络。下面是上次的结果。';
+    note.hidden = false; note.textContent = '读取状态失败，检查一下网络。下面是上次的结果。';
   } finally { btn.disabled = false; btn.classList.remove('busy'); }
 }
 
 /* ---------- 渲染 ---------- */
 function render(){
-  if (!current) return;
-  const apps = [...current.apps].sort((a, b) => RANK[a.state] - RANK[b.state] || b.auto - a.auto || new Date(b.pushed) - new Date(a.pushed));
-  const bad = apps.filter(a => a.state === 'bad'), warn = apps.filter(a => a.state === 'warn');
-  const wk = apps.reduce((s, a) => s + a.week, 0), wkOk = apps.reduce((s, a) => s + a.weekOk, 0);
-  const rate = wk ? Math.round(wkOk / wk * 100) : 100;
-  const col = rate >= 95 ? 'var(--ok)' : rate >= 80 ? 'var(--warn)' : 'var(--bad)';
-  const C = 2 * Math.PI * 50;
-  $('#ring').innerHTML = `<svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="none" stroke="var(--track)" stroke-width="12"/><circle cx="60" cy="60" r="50" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C * rate / 100} ${C}"/></svg><div class="num"><b>${rate}%</b><small>7 天成功率</small></div>`;
-  const v = $('#verdict');
-  if (bad.length) { v.className = 'verdict bad'; v.innerHTML = `<b>${bad.length} 个 App 出问题了</b><p>${esc(bad.map(a => a.title).join('、'))}${warn.length ? '；另有 ' + warn.length + ' 个需留意' : ''}</p>`; }
-  else if (warn.length) { v.className = 'verdict warn'; v.innerHTML = `<b>${warn.length} 个 App 需留意</b><p>${esc(warn.map(a => a.title + '：' + (a.alerts[0] || {}).text).join('；'))}</p>`; }
-  else { v.className = 'verdict ok'; v.innerHTML = `<b>${apps.length} 个 App 全部正常</b><p>任务按时跑完，网页都能打开，数据是新的</p>`; }
-  const next = apps.flatMap(a => a.wfs.filter(w => w.next).map(w => ({t: new Date(w.next).getTime(), a, w}))).filter(x => x.t > Date.now()).sort((x, y) => x.t - y.t)[0];
-  const today = apps.reduce((s, a) => s + a.today, 0);
-  const fails = apps.reduce((s, a) => s + a.strip.filter(x => x.c === 'bad' && bjDate(x.t) === bjDate(Date.now())).length, 0);
-  $('#stats').innerHTML = `
-    <div class="stat"><b>${today}</b><span>今天运行</span></div>
-    <div class="stat"><b style="color:${fails ? 'var(--bad)' : 'inherit'}">${fails}</b><span>今天失败</span></div>
-    <div class="stat"><b>${next ? hm(next.t) : '—'}</b><span>${next ? '下次 · ' + esc(next.a.title) : '下次任务'}</span></div>`;
-  $('#when').textContent = `检查于 ${clock(current.at)}（${ago(current.at)}）`;
-  try { if (navigator.setAppBadge) (bad.length + warn.length) ? navigator.setAppBadge(bad.length + warn.length) : navigator.clearAppBadge(); } catch (e) {}
+  if (!data) return;
+  const apps = data.apps.map(a => ({...a, R: judgeRun(a), V: judgeVer(a), B: judgeBak(a)}));
+  const issues = [];
+  for (const a of apps) {
+    for (const x of a.R.alerts) issues.push({level:x.level, text:`${a.title}：${x.text}`});
+    if (a.V.state === 'bad' || a.V.state === 'warn') issues.push({level:a.V.state, text:`${a.title}：${a.V.text}`});
+    if (a.B.state === 'bad' || (a.B.state === 'warn' && data.backup)) issues.push({level:a.B.state, text:`${a.title}：${a.B.text}`});
+  }
+  if (!data.backup) issues.push({level:'warn', text:'整库备份还没跑过第一次'});
+  issues.sort((x, y) => RANK[x.level] - RANK[y.level]);
+  const top = issues.length ? issues[0].level : 'ok';
+  const v = $('#verdict'); v.className = 'verdict ' + top;
+  v.innerHTML = issues.length
+    ? `<span class="dot"></span><div><b>${issues.filter(i => i.level === 'bad').length ? issues.filter(i => i.level === 'bad').length + ' 个问题要处理' : issues.length + ' 处需要留意'}</b><ul>${issues.slice(0, 4).map(i => `<li>${esc(i.text)}</li>`).join('')}${issues.length > 4 ? `<li>另有 ${issues.length - 4} 处</li>` : ''}</ul></div>`
+    : `<span class="dot"></span><div><b>${apps.length} 个 App 全部正常</b><ul><li>任务按时跑完，线上都是最新版，今天已备份</li></ul></div>`;
 
-  renderTimeline(apps);
+  const worst = k => apps.reduce((s, a) => RANK[a[k].state] < RANK[s] ? a[k].state : s, 'ok');
+  const runOk = apps.filter(a => RANK[a.R.state] >= 2).length;
+  const today = apps.reduce((s, a) => s + a.R.today, 0), fails = apps.reduce((s, a) => s + a.R.todayFail, 0);
+  const updated = apps.filter(a => a.V.humanWeek > 0).length, pending = apps.filter(a => a.V.state !== 'ok' && a.V.state !== 'idle').length;
+  const bk = data.backup;
+  const P = {
+    run: {dot: worst('R'), big: `${runOk}/${apps.length}`, sub: `今天运行 ${today} 次 · 失败 ${fails}`},
+    ver: {dot: worst('V'), big: `${updated} 个`, sub: pending ? `本周有更新 · ${pending} 个没上线` : '本周有更新 · 都已上线'},
+    bak: {dot: bk ? worst('B') : 'warn', big: bk ? md(bk.at) : '未备份', sub: bk ? `${bk.count} 个仓库 · ${size(bk.total_bytes)}` : '每天 03:23 自动快照'}
+  };
+  $('#pillars').innerHTML = Object.keys(VIEWS).map(k => `<button class="pillar" type="button" role="tab" data-view="${k}" aria-pressed="${k === view}"><span class="k"><i class="c-${P[k].dot}"></i>${VIEWS[k]}</span><b>${P[k].big}</b><span>${esc(P[k].sub)}</span></button>`).join('');
 
-  const groups = {all: apps, issue: apps.filter(a => a.state === 'bad' || a.state === 'warn'), auto: apps.filter(a => a.auto), static: apps.filter(a => !a.auto)};
-  const names = {all:'全部', issue:'需处理', auto:'自动更新', static:'静态网站'};
-  if (!groups[filter]) filter = 'all';
-  $('#filters').innerHTML = Object.keys(names).map(k => `<button type="button" data-f="${k}" aria-pressed="${k === filter}">${names[k]}<em>${groups[k].length}</em></button>`).join('');
-  $('#appsum').textContent = `${apps.filter(a => a.site && a.site.up).length}/${apps.length} 个网页可打开`;
-  const list = groups[filter];
-  $('#list').innerHTML = list.length ? list.map(card).join('') : `<div class="empty">${filter === 'issue' ? '没有需要处理的 App' : '这一类暂时没有 App'}</div>`;
-
-  const pct = rateLeft != null ? Math.max(0, rateLeft / rateLimit * 100) : null;
-  if (pct != null) { $('#quota').hidden = false; $('#quota').firstElementChild.style.width = pct + '%'; }
-  $('#foot').textContent = (rateLeft != null ? `本小时还能检查约 ${Math.floor(rateLeft / (apps.length + 1))} 次 · ` : '') + '新仓库只要开了 GitHub Pages，会自动出现在这里';
+  $('#view').innerHTML = view === 'run' ? viewRun(apps) : view === 'ver' ? viewVer(apps) : viewBak(apps);
+  $('#when').textContent = `服务器检查于 ${clock(data.generated_at)}（${ago(data.generated_at)}）${liveAt ? ' · 刚刚实时核对' : ''}`;
+  $('#foot').innerHTML = `服务器每 30 分钟检查一次，每天 03:23 做整库备份<br>新建的仓库只要开了 GitHub Pages，会自动出现在这里`;
+  try { if (navigator.setAppBadge) { const n = issues.filter(i => i.level === 'bad').length; n ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } } catch (e) {}
 }
 
-function renderTimeline(apps){
+const head = (a, right) => `<button class="head" type="button" data-toggle="${esc(a.repo)}" aria-expanded="${openSet.has(a.repo)}">
+  <span class="icon">${esc(a.title.slice(0, 1))}${a.probe && a.probe.icon ? `<img src="${esc(a.probe.icon)}" alt="" onerror="this.remove()">` : ''}</span>
+  <span class="title"><b>${esc(a.title)}</b><span>${esc(a.desc)}</span></span>${right}</button>`;
+const toggle = a => `<button class="toggle" type="button" data-toggle="${esc(a.repo)}">${openSet.has(a.repo) ? '收起' : '展开详情'} <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></button>`;
+const LABEL = {bad:'失败', warn:'留意', ok:'正常', idle:'无任务'};
+const sortBy = k => (x, y) => RANK[x[k].state] - RANK[y[k].state] || (y.R.auto - x.R.auto) || new Date(y.pushed_at) - new Date(x.pushed_at);
+
+/* 运行 */
+function viewRun(apps){
   const now = Date.now(), end = now + 864e5;
-  const evs = apps.flatMap(a => a.wfs.flatMap(w => w.nextList.map(t => ({t: new Date(t).getTime(), a, w})))).filter(e => e.t > now && e.t < end).sort((x, y) => x.t - y.t);
-  $('#tlsum').textContent = evs.length ? `共 ${evs.length} 次定时任务` : '';
-  if (!evs.length) { $('#timeline').innerHTML = '<div class="empty">接下来 24 小时没有定时任务</div>'; return; }
+  const evs = apps.flatMap(a => a.R.wfs.flatMap(w => w.nextList.map(t => ({t: new Date(t).getTime(), a, w})))).filter(e => e.t > now && e.t < end).sort((x, y) => x.t - y.t);
   const pos = t => ((t - now) / 864e5 * 100).toFixed(2) + '%';
-  // 夜间 0–7 点
   const nights = []; const d0 = new Date(now + BJ); d0.setUTCHours(0, 0, 0, 0);
-  for (let k = 0; k < 2; k++) { const s = d0.getTime() - BJ + k * 864e5, e = s + 7 * 3600e3;
-    const a = Math.max(s, now), b = Math.min(e, end); if (b > a) nights.push(`<div class="night" style="left:${pos(a)};width:${((b - a) / 864e5 * 100).toFixed(2)}%"></div>`); }
-  const ticks = []; const first = new Date(Math.ceil((now + BJ) / (6 * 3600e3)) * 6 * 3600e3 - BJ);
-  for (let t = first.getTime(); t < end; t += 6 * 3600e3) ticks.push(`<span class="tick" style="left:${pos(t)}">${hm(t)}</span>`);
-  const dots = evs.map(e => `<span class="ev" style="left:${pos(e.t)};background:${e.a.state === 'bad' ? 'var(--bad)' : 'var(--teal)'}" title="${esc(e.a.title)} ${hm(e.t)}"></span>`).join('');
-  const shown = evs.slice(0, 6);
-  $('#timeline').innerHTML = `<div class="axis"><div class="bar"></div>${nights.join('')}${ticks.join('')}<span class="now" style="left:0"></span>${dots}</div>
+  for (let k = 0; k < 2; k++) { const s = d0.getTime() - BJ + k * 864e5, e = s + 7 * 3600e3, x = Math.max(s, now), y = Math.min(e, end);
+    if (y > x) nights.push(`<div class="night" style="left:${pos(x)};width:${((y - x) / 864e5 * 100).toFixed(2)}%"></div>`); }
+  const ticks = []; for (let t = Math.ceil((now + BJ) / (6 * 3600e3)) * 6 * 3600e3 - BJ; t < end; t += 6 * 3600e3) ticks.push(`<span class="tick" style="left:${pos(t)}">${hm(t)}</span>`);
+  const shown = evs.slice(0, 5);
+  const tl = evs.length ? `<div class="axis"><div class="bar"></div>${nights.join('')}${ticks.join('')}<span class="now"></span>${evs.map(e => `<span class="ev" style="left:${pos(e.t)}"></span>`).join('')}</div>
     <ul class="upcoming">${shown.map(e => `<li><span class="t">${hm(e.t)}</span><span class="w">${esc(e.a.title)} <span>· ${esc(e.w.name)}</span></span><span class="in">${until(e.t)}</span></li>`).join('')}</ul>
-    ${evs.length > shown.length ? `<div class="empty">另有 ${evs.length - shown.length} 次，展开对应 App 可看全部</div>` : ''}`;
+    ${evs.length > shown.length ? `<div class="empty">另有 ${evs.length - shown.length} 次</div>` : ''}` : '<div class="empty">接下来 24 小时没有定时任务</div>';
+  const cards = [...apps].sort(sortBy('R')).map(a => {
+    const R = a.R, p = a.probe || a.site;
+    const strip = R.strip.length ? `<div class="strip">${R.strip.map(x => `<i class="${x.c} ${x.s ? 's' : 'p'}" title="${esc(x.n)} ${clock(x.t)}"></i>`).join('')}</div>
+      <div class="striplabel"><span>${md(R.strip[0].t)}</span><span>最近 ${R.strip.length} 次运行 · 高条为定时</span><span>现在</span></div>` : '';
+    const content = a.content && a.content.lines.length ? `<div class="box"><span class="lab">App 数据</span>${a.content.lines.map(l => `<div>${l}</div>`).join('')}</div>` : '';
+    return `<article class="app ${R.state}" data-open="${openSet.has(a.repo) ? 1 : 0}">${head(a, `<span class="pill ${R.state}">${LABEL[R.state]}</span>`)}
+      <div class="body">${R.alerts.map(x => `<div class="alert ${x.level === 'bad' ? '' : 'w'}">${x.level === 'bad' ? '●' : '○'} ${esc(x.text)}</div>`).join('')}${strip}
+        <div class="kv"><div><b>${R.week ? Math.round(R.weekOk / R.week * 100) + '%' : '—'}</b><span>7 天成功率</span></div>
+          <div><b>${R.next ? hm(R.next) : (R.auto ? '—' : '无')}</b><span>下次定时</span></div>
+          <div><b style="${p && !p.ok ? 'color:var(--bad)' : ''}">${p ? (p.ok ? (p.ms != null ? p.ms + ' 毫秒' : '正常') : '打不开') : '—'}</b><span>网页响应</span></div>
+          <div><b>${ago(a.pushed_at)}</b><span>仓库最后改动</span></div></div>
+        ${content}${toggle(a)}</div>${openSet.has(a.repo) ? detailRun(a) : ''}</article>`;
+  }).join('');
+  return `<section><h2>接下来 24 小时<small>${evs.length ? `共 ${evs.length} 次定时任务` : ''}</small></h2><div class="panel">${tl}</div></section>
+    <section><h2>各 App 运行情况<small>${apps.filter(a => (a.probe || a.site || {}).ok).length}/${apps.length} 个网页能打开</small></h2><div class="list">${cards}</div></section>`;
 }
-
-function card(a){
-  const open = openSet.has(a.repo);
-  const icon = a.site && a.site.icon ? `<img src="${esc(a.site.icon)}" alt="" onerror="this.remove()">` : '';
-  const strip = a.strip.length ? `<div class="strip" aria-label="近 14 天运行记录">${a.strip.map(x => `<i class="${x.c} ${x.s ? 's' : 'p'}" title="${esc(x.n)} ${clock(x.t)}"></i>`).join('')}</div>
-    <div class="striplabel"><span>${a.strip.length ? clock(a.strip[0].t).split(' ')[0] : ''}</span><span>最近 ${a.strip.length} 次运行 · 高条为定时</span><span>今天</span></div>` : '';
-  const rate = a.week ? Math.round(a.weekOk / a.week * 100) + '%' : '—';
-  const site = a.site ? (a.site.up ? `${a.site.ms} ms` : '打不开') : '—';
-  const kv = `<div class="kv">
-      <div><b>${rate}</b><span>7 天成功率</span></div>
-      <div><b>${a.next ? hm(a.next) : (a.auto ? '—' : '无')}</b><span>下次定时</span></div>
-      <div><b style="${a.site && !a.site.up ? 'color:var(--bad)' : ''}">${site}</b><span>网页响应</span></div>
-      <div><b>${a.pushed ? ago(a.pushed) : '—'}</b><span>最后更新</span></div></div>`;
-  const alerts = a.alerts.map(x => `<div class="alert ${x.level === 'bad' ? '' : 'w'}">${x.level === 'bad' ? '●' : '○'} ${esc(x.text)}</div>`).join('');
-  const content = a.content && a.content.lines && a.content.lines.length ? `<div class="content"><span class="lab">App 数据</span>${a.content.lines.map(l => `<div>${l}</div>`).join('')}</div>` : '';
-  return `<article class="app ${a.state}" data-repo="${esc(a.repo)}" data-open="${open ? 1 : 0}">
-    <button class="head" type="button" data-toggle="${esc(a.repo)}" aria-expanded="${open}">
-      <span class="icon">${esc(a.title.slice(0, 1))}${icon}</span>
-      <span class="title"><b>${esc(a.title)}</b><span>${esc(a.desc)}${a.auto ? ' · 自动更新' : ' · 静态网站'}</span></span>
-      <span class="pill ${a.state}">${LABEL[a.state]}</span>
-    </button>
-    <div class="body">${alerts}${strip}${kv}${content}
-      <button class="toggle" type="button" data-toggle="${esc(a.repo)}">${open ? '收起详情' : '展开详情'} <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></button>
-    </div>
-    ${open ? detail(a) : ''}
-  </article>`;
-}
-
-function detail(a){
-  const wfs = a.wfs.map(w => {
-    const dot = {bad:'var(--bad)', warn:'var(--warn)', ok:'var(--ok)', idle:'var(--idle)'}[w.state];
-    const meta = [w.week ? `7 天 ${w.weekOk}/${w.week} 次成功` : '', w.avg != null ? `平均 ${dur(w.avg)}` : '', w.nextList.length ? `24 小时内还会跑 ${w.nextList.length} 次` : (w.next ? `下次 ${clock(w.next)}` : '')].filter(Boolean).join(' · ');
-    const runs = w.runs.map(r => {
+function detailRun(a){
+  const wfs = a.R.wfs.map(w => {
+    const meta = [w.week ? `7 天 ${w.weekOk}/${w.week} 次成功` : '', w.avg != null ? `平均 ${dur(w.avg)}` : '', w.nextList.length ? `24 小时内还会跑 ${w.nextList.length} 次` : ''].filter(Boolean).join(' · ');
+    const why = w.failRun ? `<div class="why">${esc((a.failSteps || {})[w.failRun.id] || '点下面的「失败」看日志')}</div>` : '';
+    return `<div class="wf"><h3><i class="c-${w.state}"></i>${esc(w.name)}<small>${esc(meta)}</small></h3>${why}<ul class="runs">${w.runs.map(r => {
       const c = r.status !== 'completed' ? '' : BAD.includes(r.conclusion) ? 'bad' : IGNORE.includes(r.conclusion) ? '' : 'ok';
       const res = r.status !== 'completed' ? '运行中' : BAD.includes(r.conclusion) ? '失败' : r.conclusion === 'cancelled' ? '已取消' : r.conclusion === 'skipped' ? '跳过' : '成功';
-      const d = r.run_started_at && r.status === 'completed' ? (new Date(r.updated_at) - new Date(r.run_started_at)) / 1000 : null;
-      const msg = (r.head_commit && r.head_commit.message || '').split('\n')[0];
-      return `<li><span class="tm">${clock(r.created_at)}</span><span class="ev">${EVENT[r.event] || esc(r.event)}</span><a class="rs ${c}" href="${esc(r.html_url)}" target="_blank" rel="noopener" title="${esc(msg)}">${res}${r.event !== 'schedule' && msg ? ' · ' + esc(msg) : ''}</a><span class="du">${dur(d)}</span></li>`;
-    }).join('');
-    const why = w.failRun ? `<div class="why" data-why="${w.failRun.id}" data-repo="${esc(a.repo)}">${esc(whyCache[w.failRun.id] || '正在查找出错的步骤…')}</div>` : '';
-    return `<div class="wf"><h3><i style="background:${dot}"></i>${esc(w.name)}<small>${esc(meta)}</small></h3>${why}<ul class="runs">${runs}</ul></div>`;
+      const d = r.started && r.status === 'completed' ? (new Date(r.updated_at) - new Date(r.started)) / 1000 : null;
+      return `<li><span class="tm">${clock(r.created_at)}</span><span class="ev">${EVENT[r.event] || esc(r.event)}</span><a class="rs ${c}" href="${esc(r.url)}" target="_blank" rel="noopener">${res}${r.event !== 'schedule' && r.msg ? ' · ' + esc(r.msg) : ''}</a><span class="du">${dur(d)}</span></li>`;
+    }).join('')}</ul></div>`;
   }).join('');
-  return `<div class="detail">${wfs || '<div class="empty">这个仓库没有自动任务记录</div>'}
-    <div class="links"><a href="${esc(a.url)}" target="_blank" rel="noopener">打开 App</a><a href="${esc(a.actions)}" target="_blank" rel="noopener">GitHub 任务记录</a><a href="https://github.com/${OWNER}/${esc(a.repo)}" target="_blank" rel="noopener">仓库</a></div></div>`;
+  return `<div class="detail">${wfs || '<div class="empty">这个仓库没有自动任务</div>'}<div class="links"><a href="${esc(a.url)}" target="_blank" rel="noopener">打开 App</a><a href="https://github.com/${OWNER}/${esc(a.repo)}/actions" target="_blank" rel="noopener">GitHub 任务记录</a></div></div>`;
 }
 
-const whyCache = {};
-async function loadWhy(){
-  for (const el of document.querySelectorAll('[data-why]')) {
-    const id = el.dataset.why;
-    if (!whyCache[id]) {
-      try {
-        const d = await gh(`/repos/${OWNER}/${el.dataset.repo}/actions/runs/${id}/jobs`);
-        const job = (d.jobs || []).find(j => BAD.includes(j.conclusion)) || (d.jobs || [])[0];
-        const step = job && (job.steps || []).find(s => BAD.includes(s.conclusion));
-        whyCache[id] = step ? `出错的步骤：「${step.name}」（任务 ${job.name}）。点下方「失败」可看完整日志。` : '没找到具体出错步骤，点下方「失败」看日志。';
-      } catch (e) { whyCache[id] = e.rate ? '查询次数用完，稍后再看出错步骤。' : '没读到出错步骤，点下方「失败」看日志。'; }
-    }
-    el.textContent = whyCache[id];
-  }
+/* 版本 */
+function viewVer(apps){
+  const cards = [...apps].sort((x, y) => RANK[x.V.state] - RANK[y.V.state] || new Date((y.updates[0] || {}).date || 0) - new Date((x.updates[0] || {}).date || 0)).map(a => {
+    const V = a.V, open = openSet.has(a.repo);
+    const ups = V.updates.slice(0, open ? 5 : 3);
+    return `<article class="app ${V.state === 'ok' || V.state === 'idle' ? '' : V.state}" data-open="${open ? 1 : 0}">${head(a, `<span class="ver" title="${esc(V.labelNote)}">${esc(V.label)}</span>`)}
+      <div class="body">
+        <div class="dl"><span class="${V.state === 'bad' ? 'alert' : V.state === 'warn' ? 'alert w' : ''}" style="font-size:13px">${V.state === 'ok' ? '<span class="y">●</span> ' : ''}${esc(V.text)}</span><span class="pill ${V.state}">${V.deployedAt ? '上线于 ' + clock(V.deployedAt) : '—'}</span></div>
+        <div class="box"><span class="lab">最近的功能更新<em>${V.humanWeek ? `本周 ${V.humanWeek} 次` : '本周没有'}</em></span>
+          ${ups.length ? `<ul class="ups">${ups.map(u => `<li><span class="d">${md(u.date)}</span><span class="m" title="${esc(u.msg)}">${esc(u.msg)}</span></li>`).join('')}</ul>` : '<div class="n">还没有功能更新记录</div>'}
+          ${V.autoWeek ? `<div class="n" style="font-size:12px">另有数据自动更新：本周 ${V.autoWeek} 次</div>` : ''}</div>
+        ${open ? `<div class="n" style="font-size:12px">版本号来源：${esc(V.labelNote)}</div><div class="links"><a href="${esc(a.url)}" target="_blank" rel="noopener">打开 App</a><a href="https://github.com/${OWNER}/${esc(a.repo)}/commits" target="_blank" rel="noopener">全部提交记录</a></div>` : ''}
+        ${toggle(a)}</div></article>`;
+  }).join('');
+  return `<section><h2>各 App 版本<small>按最近更新排序</small></h2><div class="list">${cards}</div></section>`;
 }
 
+/* 备份 */
+function viewBak(apps){
+  const bk = data.backup;
+  const intro = bk
+    ? `<p><b>整库快照</b>：每天 03:23 自动把 ${bk.count} 个仓库的代码和云端数据各打一个压缩包，保留 ${bk.retention} 天（现有 ${bk.days} 天）。</p>
+       <p class="muted">最近一次：${clock(bk.at)} · 共 ${size(bk.total_bytes)}。超过 2 MB 的大文件（如 Forge 的音乐）不收录，它们仍在各自仓库里。</p>
+       <a class="btnlink" href="${esc(bk.all_url)}" rel="noopener">下载全部（${size(bk.total_bytes)}）</a>`
+    : `<p><b>整库快照</b>：每天 03:23 自动把每个仓库的代码和云端数据各打一个压缩包，保留 30 天。</p><p class="muted">第一次备份还没完成。</p>`;
+  const localCnt = apps.filter(a => a.phone.kind === 'local').length;
+  const order = {local:0, unknown:1, cloud:2, minor:3, none:4};
+  const kindText = {local:'只在手机里', cloud:'已在云端', none:'无需备份', minor:'影响不大', unknown:'未登记'};
+  const cards = [...apps].sort((x, y) => RANK[x.B.state] - RANK[y.B.state] || order[x.phone.kind] - order[y.phone.kind]).map(a => {
+    const B = a.B, b = B.latest, max = Math.max(...B.hist.map(h => h.bytes || 0), 1);
+    const hist = B.hist.slice().reverse().map((h, i, arr) => `<i class="${i && arr[i - 1].sha === h.sha ? 'same' : ''}" style="height:${Math.max(15, (h.bytes || 0) / max * 100)}%" title="${esc(h.date)} ${size(h.bytes)}"></i>`).join('');
+    const cloud = b && !b.error
+      ? `<div class="dl"><span>${md(b.at)} ${hm(b.at)} · ${size(b.bytes)} · ${b.files} 个文件</span><a href="${esc(b.url)}" rel="noopener">下载</a></div>
+         ${b.skipped ? `<div class="n" style="font-size:12px">跳过 ${b.skipped} 个大文件（${size(b.skipped_bytes)}）</div>` : ''}
+         ${B.hist.length > 1 ? `<div class="dl"><div class="hist">${hist}</div><span class="n" style="font-size:12px">${B.changed ? '比上一份有变化' : '和上一份相同'} · 共 ${B.hist.length} 份</span></div>` : ''}`
+      : `<div class="${b && b.error ? 'alert' : 'n'}">${esc(B.text)}</div>`;
+    return `<article class="app ${B.state === 'ok' ? '' : B.state}">${head(a, `<span class="chip ${a.phone.kind}">${kindText[a.phone.kind] || '未登记'}</span>`)}
+      <div class="body">
+        <div class="box"><span class="lab">云端整库快照<em>代码＋云端数据</em></span>${cloud}</div>
+        <div class="box"><span class="lab">手机里的数据<em>${kindText[a.phone.kind] || ''}</em></span><div>${esc(a.phone.text)}</div>
+          ${a.phone.kind === 'local' ? `<div><a href="${esc(a.url + (a.phone.path || ''))}" target="_blank" rel="noopener" style="font-weight:600;text-decoration:none">打开 ${esc(a.title)} 去备份</a></div>` : ''}</div>
+      </div></article>`;
+  }).join('');
+  return `<section><h2>云端数据</h2><div class="panel">${intro}</div></section>
+    <section><h2>各 App 备份情况<small>${localCnt} 个 App 有只在手机里的数据</small></h2>
+    <div class="panel" style="margin-bottom:12px"><p class="muted">这 ${localCnt} 个 App 的记录存在你手机上，总控台读不到，也看不到它们上次备份的时间。换手机、清理 Safari 数据或删掉 App 前，记得在 App 里各备份一次。</p></div>
+    <div class="list">${cards}</div></section>`;
+}
+
+/* ---------- 交互 ---------- */
 document.addEventListener('click', e => {
-  const f = e.target.closest('[data-f]');
-  if (f) { filter = f.dataset.f; store.set(FILTER, filter); render(); return; }
+  const p = e.target.closest('[data-view]');
+  if (p) { view = p.dataset.view; store.set('hub-view', view); render(); return; }
   const t = e.target.closest('[data-toggle]');
-  if (t) { const r = t.dataset.toggle; openSet.has(r) ? openSet.delete(r) : openSet.add(r); render(); loadWhy(); }
+  if (t && view !== 'bak') { const r = t.dataset.toggle; openSet.has(r) ? openSet.delete(r) : openSet.add(r); render(); }
 });
-$('#refresh').addEventListener('click', check);
+$('#refresh').addEventListener('click', () => load(true));
 
-current = store.get(CACHE);
-if (current && current.apps) render();
-if (!current || Date.now() - current.at > STALE_MIN * 60000) check();
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && (!current || Date.now() - current.at > STALE_MIN * 60000)) check();
-});
-setInterval(() => { if (document.visibilityState === 'visible' && current) { renderTimeline([...current.apps]); $('#when').textContent = `检查于 ${clock(current.at)}（${ago(current.at)}）`; } }, 60000);
+const cached = store.get('hub-last');
+if (cached && cached.st) { data = cached.st; render(); }
+load(false);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && (!fetchedAt || Date.now() - fetchedAt > 5 * 60000)) load(false); });
+setInterval(() => { if (document.visibilityState === 'visible' && data) render(); }, 60000);
 </script>
 </body>
 </html>

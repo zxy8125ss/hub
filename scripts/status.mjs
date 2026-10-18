@@ -74,14 +74,26 @@ async function one(repo) {
   }
 
   // 提交记录
+  // 提交记录：自动数据提交（机器人）与功能更新分开；功能更新至少找 3 条，最多往前翻 5 页
   try {
-    const c = await gh(`/repos/${OWNER}/${repo.name}/commits?per_page=60&sha=${branch}`);
-    out.commits = c.map(x => ({
+    const map = x => ({
       sha: x.sha.slice(0, 7), date: x.commit.committer.date,
       msg: x.commit.message.split('\n')[0].slice(0, 90),
       bot: /\[bot\]$/.test((x.author && x.author.login) || '') || /\[bot\]|github-actions/.test(x.commit.author.name || '')
-    }));
-  } catch { out.commits = []; out.errors.push('读取提交记录失败'); }
+    });
+    const all = [];
+    for (let page = 1; page <= 5; page++) {
+      const c = (await gh(`/repos/${OWNER}/${repo.name}/commits?per_page=100&page=${page}&sha=${branch}`)).map(map);
+      all.push(...c);
+      if (c.length < 100 || all.filter(x => !x.bot).length >= 3) break;
+    }
+    const week = Date.now() - 7 * 864e5;
+    out.head = all[0] || null;
+    out.headHuman = all.find(x => !x.bot) || null;
+    out.updates = all.filter(x => !x.bot).slice(0, 5);
+    out.autoWeek = all.filter(x => x.bot && new Date(x.date) > week).length;
+    out.humanWeek = all.filter(x => !x.bot && new Date(x.date) > week).length;
+  } catch { out.updates = []; out.errors.push('读取提交记录失败'); }
 
   out.version = await versionOf(repo.name, pagesUrl, branch);
   const t0 = Date.now();
