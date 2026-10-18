@@ -51,7 +51,8 @@ h1{font:600 25px/1.2 var(--serif);margin:0;letter-spacing:.03em}
 .verdict ul{margin:4px 0 0;padding:0;list-style:none;font-size:13px;color:var(--muted);display:grid;gap:2px}
 .verdict.ok{color:var(--ok)} .verdict.warn{color:var(--warn)} .verdict.bad{color:var(--bad)} .verdict.idle{color:var(--idle)}
 .verdict ul li{color:var(--ink);opacity:.8}
-.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pillars{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.pillars{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .pillar{border:2px solid transparent;background:var(--sand);border-radius:20px;padding:10px 12px;text-align:left;min-width:0;display:grid;gap:2px}
 .pillar[aria-pressed="true"]{background:var(--card);border-color:var(--ink)}
 .pillar .k{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
@@ -162,6 +163,20 @@ footer{margin-top:26px;color:var(--muted);font-size:12px;text-align:center;line-
 .dir .nm span{font-family:var(--mono);font-size:11.5px;color:var(--teal);display:block;word-break:break-all;user-select:all;-webkit-user-select:all}
 .dir button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;font-size:12.5px;white-space:nowrap}
 .dir button.done{background:var(--okbg);color:var(--ok);border-color:transparent}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:disabled{opacity:.5}
+.recs{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.recs li{display:grid;gap:2px;min-width:0}
+.recs .rt{font-size:12px;color:var(--muted);display:flex;gap:6px;min-width:0}
+.recs .rt b{color:var(--ink);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recs .rx{font-size:13.5px;white-space:pre-wrap;word-break:break-word}
+.recs.clamp .rx{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.recday{font:600 13px var(--serif);color:var(--brown);margin-top:6px}
+.result{font-size:13px;display:grid;gap:2px;margin-top:8px}
+.result .bad{color:var(--bad)}
+input[type=search]{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:8px 12px}
 .skeleton{height:140px;border-radius:24px;background:var(--sand);opacity:.6}
 </style>
 </head>
@@ -185,8 +200,9 @@ footer{margin-top:26px;color:var(--muted);font-size:12px;text-align:center;line-
   <footer id="foot"></footer>
 </div>
 
+<script src="records.js?v=2026-10-18-1800"></script>
 <script>
-const BUILD = '2026-10-18-1720b';
+const BUILD = '2026-10-18-1800';
 (async () => {   // 自动更新：线上有新版本就刷新一次
   try {
     const v = (await (await fetch('version.json?t=' + Date.now(), {cache:'no-store'})).json()).build;
@@ -202,7 +218,7 @@ const IGNORE = ['cancelled','skipped','neutral','stale'];
 const JOBNAME = {'pages build and deployment':'更新网页','Deploy to gh-pages':'更新网页','部署':'更新网页','部署到 GitHub Pages':'更新网页','Deploy to GitHub Pages':'更新网页','pages':'更新网页'};
 const EVENT = {schedule:'定时',push:'提交',workflow_dispatch:'手动',issues:'App提交',dynamic:'更新网页',workflow_run:'联动',repository_dispatch:'触发'};
 const RANK = {bad:0,warn:1,ok:2,idle:3};
-const VIEWS = {run:'运行正常', ver:'版本更新', bak:'最近备份'};
+const VIEWS = {run:'运行正常', ver:'版本更新', bak:'最近备份', rec:'我的记录'};
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -474,10 +490,12 @@ function render(){
     ver: {dot: worst('V'), big: `${updated} 个`, sub: ['本周有功能更新', pending ? `${pending} 个网页没更新` : '网页都是最新版']},
     bak: {dot: bk ? worst('B') : 'warn', big: bk ? md(bk.at) : '未备份', sub: bk ? [`${bk.count} 个 App`, size(bk.total_bytes)] : ['每天 03:23', '自动备份']}
   };
+  P.rec = {dot: recState.total ? 'ok' : 'idle', big: recState.total ? `${recState.total} 条` : '未导入', sub: recState.total ? [`${recState.apps} 个 App`, `最近导入 ${md(recState.last)}`] : ['导入各 App 的', '备份后可查看']};
   $('#pillars').innerHTML = Object.keys(VIEWS).map(k => `<button class="pillar" type="button" role="tab" data-view="${k}" aria-pressed="${k === view}"><span class="k"><i class="c-${P[k].dot}"></i>${VIEWS[k]}</span><b>${P[k].big}</b><span>${P[k].sub.map(x => `<em>${esc(x)}</em>`).join('')}</span></button>`).join('');
 
   renderDir(apps);
-  $('#view').innerHTML = view === 'run' ? viewRun(apps) : view === 'ver' ? viewVer(apps) : viewBak(apps);
+  if (view === 'rec') { $('#view').innerHTML = recShell(); renderRec(apps); }
+  else $('#view').innerHTML = view === 'run' ? viewRun(apps) : view === 'ver' ? viewVer(apps) : viewBak(apps);
   $('#when').textContent = `自动检查于 ${clock(data.generated_at)}（${ago(data.generated_at)}）${liveAt ? ' · 刚刚又核对过' : ''}`;
   $('#foot').innerHTML = `每 30 分钟自动检查一次，每天 03:23 自动备份<br>新做的 App 发布成网页后，会自动出现在这里`;
   try { if (navigator.setAppBadge) { const n = issues.filter(i => i.level === 'bad').length; n ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } } catch (e) {}
@@ -585,6 +603,83 @@ function viewBak(apps){
     <div class="list">${cards}</div></section>`;
 }
 
+/* 我的记录 */
+const R = window.HubRecords;
+let recState = {total: 0, apps: 0, last: 0}, recOpen = new Set(), recQuery = '', recMsg = '';
+async function refreshRecState(){
+  try { const all = await R.getAll(); let total = 0, last = 0;
+    for (const r of all) { total += (await R.itemsOf(r)).length; last = Math.max(last, (r.imports[0] || {}).at || 0); }
+    recState = {total, apps: all.length, last};
+  } catch (e) {}
+}
+function recShell(){
+  return `<section><h2>我的记录<small>只存在这台手机的总控台里</small></h2>
+    <div class="panel"><p>Ease、Forge、Crosscheck、左右千年、领袖·政党这几个 App 的记录存在它们各自里面。先在 App 里导出备份文件，再在这里导入，就能在总控台里看、搜、导出。</p>
+      <p class="muted">每次导入都会和之前导入的合在一起，重复的自动去掉。想攒全，就隔一段时间在 App 里导出一次再导入。</p>
+      <div class="btns" style="margin-top:10px"><label class="btn pri" for="recfile">导入备份文件</label><input id="recfile" type="file" accept=".json,application/json" multiple hidden>
+        <button class="btn" type="button" data-rx="all-md">全部导出成文字</button><button class="btn" type="button" data-rx="all-json">全部导出成备份文件</button></div>
+      <div class="result" id="recmsg">${recMsg}</div></div></section>
+    <section><div id="reclist"><div class="skeleton"></div></div></section>`;
+}
+async function renderRec(apps){
+  const all = await R.getAll().catch(() => []);
+  const byId = Object.fromEntries(all.map(r => [r.id, r]));
+  const urlOf = id => { const a = apps.find(x => x.key === R.REPO[id]); return a ? a.url : `https://${OWNER}.github.io/${R.REPO[id]}/`; };
+  const iconOf = id => { const a = apps.find(x => x.key === R.REPO[id]); return a && a.probe && a.probe.icon; };
+  const q = recQuery.trim();
+  const blocks = [];
+  for (const id of R.ORDER) {
+    const A = R.APPS[id], rec = byId[id], items = rec ? await R.itemsOf(rec) : [];
+    const shown = q ? items.filter(it => (it.title + '\n' + it.text).includes(q)) : items;
+    const open = recOpen.has(id) || !!q;
+    const icon = iconOf(id);
+    const head = `<div class="head" style="cursor:default"><span class="icon">${esc(A.name.slice(0, 1))}${icon ? `<img src="${esc(icon)}" alt="" onerror="this.remove()">` : ''}</span>
+      <span class="title"><b>${esc(A.name)}</b><span>${rec ? `最近导入 ${clock(rec.imports[0].at)} · 共导入 ${rec.imports.length} 次` : '还没导入'}</span></span>
+      <span class="pill ${rec ? 'ok' : 'idle'}">${rec ? items.length + ' 条' : '未导入'}</span></div>`;
+    if (!rec) { blocks.push(`<article class="app">${head}<div class="body"><div class="box"><span class="lab">怎么导出</span><div>${esc(A.how)}，再回这里点「导入备份文件」。</div><div><a href="${esc(urlOf(id))}" target="_blank" rel="noopener" style="font-weight:600;text-decoration:none">打开 ${esc(A.name)}</a></div></div></div></article>`); continue; }
+    const list = open ? shown : shown.slice(0, 3);
+    let day = '', rows = '';
+    for (const it of list) {
+      const d = it.at ? R.ymd(it.at) : '未标日期';
+      if (open && d !== day) { rows += `<li class="recday">${d}</li>`; day = d; }
+      rows += `<li><span class="rt">${it.at ? `<span>${open ? R.hhmm(it.at) : md(it.at)}</span>` : ''}<b>${esc(it.title)}</b></span>${it.text ? `<span class="rx">${esc(it.text)}</span>` : ''}</li>`;
+    }
+    const range = items.length ? `记录从 ${R.ymd(items[items.length - 1].at || items[0].at)} 到 ${R.ymd(items[0].at)}` : '';
+    blocks.push(`<article class="app">${head}<div class="body">
+      ${range ? `<div class="n" style="font-size:12px">${range}${q ? ` · 搜到 ${shown.length} 条` : ''}</div>` : ''}
+      ${list.length ? `<ul class="recs ${open ? '' : 'clamp'}">${rows}</ul>` : `<div class="n">${q ? '没有搜到' : '这次导入的文件里没有记录'}</div>`}
+      ${!q && items.length > 3 ? `<button class="toggle" type="button" data-rt="${id}">${open ? '收起' : `查看全部 ${items.length} 条`} <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="${open ? 'transform:rotate(180deg)' : ''}"><path d="m6 9 6 6 6-6"/></svg></button>` : ''}
+      <div class="btns"><button class="btn" type="button" data-rx="${id}-md">导出文字</button><button class="btn" type="button" data-rx="${id}-json">导出备份文件</button><a class="btn" href="${esc(urlOf(id))}" target="_blank" rel="noopener">打开 App</a></div>
+      ${open && !q ? `<div class="n" style="font-size:12px">「备份文件」是 ${esc(A.name)} 自己的格式，合并了每次导入的记录，可以在 App 里用「恢复」导回去。</div><div><button class="toggle" type="button" data-rdel="${id}" style="color:var(--bad)">从总控台删掉这些记录</button></div>` : ''}
+      </div></article>`);
+  }
+  const others = '<div class="panel" style="margin-top:12px"><p class="muted">其他 App：基金日记、生活雷达的记录存在 GitHub 上，每天自动备份，在「最近备份」里下载；五子棋、芽芽只存设置和进度，没有导出功能；Game On 没有个人记录。</p></div>';
+  const el = $('#reclist'); if (!el) return;
+  el.innerHTML = `${all.length ? '<input type="search" id="recq" placeholder="搜索所有导入的记录" value="' + esc(recQuery) + '" style="margin-bottom:12px">' : ''}<div class="list">${blocks.join('')}</div>${others}`;
+  const qi = $('#recq'); if (qi && recQuery) { qi.focus(); qi.setSelectionRange(recQuery.length, recQuery.length); }
+}
+document.addEventListener('input', e => { if (e.target.id === 'recq') { recQuery = e.target.value; clearTimeout(window._rq); window._rq = setTimeout(() => data && renderRec(data.apps), 250); } });
+document.addEventListener('change', async e => {
+  if (e.target.id !== 'recfile') return;
+  const files = [...e.target.files]; if (!files.length) return;
+  const out = [];
+  for (const f of files) out.push(...await R.importFile(f));
+  recMsg = out.map(r => r.error ? `<div class="bad">${esc(r.file)}：${esc(r.error)}</div>` : `<div>${esc(r.app)}：新增 ${r.added} 条，更新 ${r.updated} 条</div>`).join('');
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (err) {}
+  await refreshRecState(); render();
+});
+document.addEventListener('click', async e => {
+  const x = e.target.closest('[data-rx]');
+  if (x) { const [id, kind] = x.dataset.rx.split('-'); x.disabled = true; try { id === 'all' ? await R.exportAll(kind) : await R.exportOne(id, kind); } finally { x.disabled = false; } return; }
+  const t = e.target.closest('[data-rt]');
+  if (t) { const id = t.dataset.rt; recOpen.has(id) ? recOpen.delete(id) : recOpen.add(id); renderRec(data.apps); return; }
+  const d = e.target.closest('[data-rdel]');
+  if (d) {
+    if (d.dataset.sure) { await R.del(d.dataset.rdel); recMsg = `<div>已从总控台删掉 ${esc(R.APPS[d.dataset.rdel].name)} 的记录（App 里的不受影响）</div>`; await refreshRecState(); render(); }
+    else { d.dataset.sure = '1'; d.textContent = '再点一次确认删除（App 里的记录不受影响）'; }
+  }
+});
+
 /* 全部 App 网址 */
 const short = u => u.replace(/^https?:\/\//, '').replace(/\/$/, '');
 function renderDir(apps){
@@ -607,10 +702,11 @@ document.addEventListener('click', e => {
   const p = e.target.closest('[data-view]');
   if (p) { view = p.dataset.view; store.set('hub-view', view); render(); return; }
   const t = e.target.closest('[data-toggle]');
-  if (t && view !== 'bak') { const r = t.dataset.toggle; openSet.has(r) ? openSet.delete(r) : openSet.add(r); render(); }
+  if (t && view !== 'bak' && view !== 'rec') { const r = t.dataset.toggle; openSet.has(r) ? openSet.delete(r) : openSet.add(r); render(); }
 });
 $('#refresh').addEventListener('click', () => load(true));
 
+refreshRecState().then(() => data && render());
 const cached = store.get('hub-last');
 if (cached && cached.st) { data = cached.st; render(); }
 load(false);
