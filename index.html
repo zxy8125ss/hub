@@ -200,9 +200,9 @@ input[type=search]{width:100%;font:inherit;font-size:14px;border:1px solid var(-
   <footer id="foot"></footer>
 </div>
 
-<script src="records.js?v=2026-10-18-1850"></script>
+<script src="records.js?v=2026-10-18-1900"></script>
 <script>
-const BUILD = '2026-10-18-1850';
+const BUILD = '2026-10-18-1900';
 (async () => {   // 自动更新：线上有新版本就刷新一次
   try {
     const v = (await (await fetch('version.json?t=' + Date.now(), {cache:'no-store'})).json()).build;
@@ -402,7 +402,7 @@ function judgeVer(a){
   const last = deploys[0], ok = deploys.find(r => r.status === 'completed' && r.conclusion === 'success');
   // 版本号统一成短写法：语义版本显示 v1.3.1；日期型（构建号或没标版本的）显示「10.18 版」
   const raw = a.version && a.version.label;
-  const dm = raw && raw.match(/^\d{4}[-.](\d{2})[-.](\d{2})/);
+  const dm = raw && (raw.match(/^v?\d{4}[-.](\d{2})[-.](\d{2})/) || raw.match(/^v?\d{4}(\d{2})(\d{2})\d{4}/));
   const label = raw ? (dm ? `${+dm[1]}.${dm[2]} 版` : (/^\d/.test(raw) ? 'v' + raw : raw)) : (a.headHuman ? md(a.headHuman.date).replace('/', '.') + ' 版' : '—');
   const labelNote = a.version && a.version.label ? a.version.source : '没有标版本号，按最近一次功能更新的日期显示';
   let state = 'ok', text = '网页已是最新版';
