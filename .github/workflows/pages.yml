@@ -1,0 +1,17 @@
+name: 同步网页
+on:
+  push:
+    branches: [main]
+    paths: ['index.html', 'records.js', 'version.json', 'manifest.webmanifest', 'icon-*.png']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: 把 main 同步到发布网页的 gh-pages 分支
+        run: git push -f origin HEAD:gh-pages

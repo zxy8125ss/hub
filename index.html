@@ -200,9 +200,9 @@ input[type=search]{width:100%;font:inherit;font-size:14px;border:1px solid var(-
   <footer id="foot"></footer>
 </div>
 
-<script src="records.js?v=2026-10-18-1915"></script>
+<script src="records.js?v=2026-10-18-2010"></script>
 <script>
-const BUILD = '2026-10-18-1915';
+const BUILD = '2026-10-18-2010';
 (async () => {   // 自动更新：线上有新版本就刷新一次
   try {
     const v = (await (await fetch('version.json?t=' + Date.now(), {cache:'no-store'})).json()).build;
@@ -454,9 +454,11 @@ async function load(live){
       }
     }
     await Promise.all(extra);
+    // 自动检查超过 45 分钟没更新时，现场再核对一次任务状态
+    if (!live && Date.now() - new Date(st.generated_at) > 45 * 60000 && !load._auto) { load._auto = true; data = st; render(); return load(true); }
     data = st;
     store.set('hub-last', {at: Date.now(), st});
-    if (Date.now() - new Date(st.generated_at) > 90 * 60000) { note.hidden = false; note.textContent = `自动检查已经 ${ago(st.generated_at)}没更新了，总控台自己的检查任务可能停了。`; }
+    if (Date.now() - new Date(st.generated_at) > 90 * 60000) { note.hidden = false; note.textContent = `自动检查已经 ${ago(st.generated_at)}没更新了${liveAt ? '，任务状态已现场核对过' : ''}。`; }
     render();
   } catch (e) {
     note.hidden = false; note.textContent = '读取状态失败，检查一下网络。下面是上次的结果。';
