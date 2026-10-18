@@ -125,7 +125,7 @@ h2 small{font:12px var(--sans);color:var(--muted);white-space:nowrap}
 .ups{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 .ups li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;font-size:13px}
 .ups .d{font-family:var(--mono);font-size:11.5px;color:var(--muted);padding-top:1px}
-.ups .m{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ups .m{min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.45}
 .dl{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .dl a{font-weight:600;text-decoration:none;white-space:nowrap}
 .chip{font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
@@ -175,7 +175,7 @@ footer{margin-top:26px;color:var(--muted);font-size:12px;text-align:center;line-
 </div>
 
 <script>
-const BUILD = '2026-10-18-1720';
+const BUILD = '2026-10-18-1750';
 (async () => {   // 自动更新：线上有新版本就刷新一次
   try {
     const v = (await (await fetch('version.json?t=' + Date.now(), {cache:'no-store'})).json()).build;
@@ -191,7 +191,7 @@ const IGNORE = ['cancelled','skipped','neutral','stale'];
 const JOBNAME = {'pages build and deployment':'发布网页','Deploy to gh-pages':'发布网页','部署':'发布网页','部署到 GitHub Pages':'发布网页','Deploy to GitHub Pages':'发布网页','pages':'发布网页'};
 const EVENT = {schedule:'定时',push:'提交',workflow_dispatch:'手动',issues:'App提交',dynamic:'发布',workflow_run:'联动',repository_dispatch:'触发'};
 const RANK = {bad:0,warn:1,ok:2,idle:3};
-const VIEWS = {run:'运行', ver:'版本', bak:'备份'};
+const VIEWS = {run:'运行正常', ver:'版本更新', bak:'最近备份'};
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -256,7 +256,13 @@ async function gh(path){
   if (!r.ok) throw new Error('HTTP ' + r.status);
   return r.json();
 }
-async function probe(url){
+async function probe(url, retry = true){
+  const r1 = await probeOnce(url);
+  if (r1.ok || !retry) return r1;
+  await new Promise(r => setTimeout(r, 1500));
+  return probeOnce(url);
+}
+async function probeOnce(url){
   const t0 = performance.now();
   try {
     const r = await fetch(url, {cache:'no-store'});
@@ -346,8 +352,11 @@ function judgeRun(a){
   wfs.sort((x, y) => RANK[x.state] - RANK[y.state] || y.scheduled - x.scheduled);
   let state = wfs.reduce((s, w) => RANK[w.state] < RANK[s] ? w.state : s, wfs.length ? 'ok' : 'idle');
   const alerts = wfs.filter(w => w.why && w.state !== 'ok').map(w => ({level: w.state, text: `${w.name}：${w.why}`}));
-  const site = a.probe || a.site;
-  if (site && !site.ok) { state = 'bad'; alerts.unshift({level:'bad', text:`网页打不开（${site.code || '无响应'}）`}); }
+  // 网页能否打开：手机和服务器都打不开才算故障；只有一边打不开记为留意
+  const ph = a.probe, sv = a.site;
+  if (sv && !sv.ok && (!ph || !ph.ok)) { state = 'bad'; alerts.unshift({level:'bad', text:`网页打不开（${sv.code || '无响应'}）`}); }
+  else if (ph && !ph.ok) { if (RANK[state] > 1) state = 'warn'; alerts.unshift({level:'warn', text:'这次从你这儿没打开网页，服务器检查是正常的'}); }
+  else if (sv && !sv.ok) { if (RANK[state] > 1) state = 'warn'; alerts.unshift({level:'warn', text:'服务器上次没打开网页，你这儿是正常的'}); }
   for (const w of (a.content && a.content.warn) || []) { alerts.push({level:'warn', text:w}); if (RANK[state] > 1) state = 'warn'; }
   if (a.runs == null) { alerts.push({level:'warn', text:'没读到任务记录'}); if (RANK[state] > 1) state = 'warn'; }
   const recent = (a.runs || []).filter(r => Date.now() - new Date(r.created_at) < 14 * 864e5);
@@ -371,7 +380,7 @@ function judgeVer(a){
   const labelNote = a.version && a.version.label ? a.version.source : '没有标版本号，按最近一次功能更新的日期显示';
   let state = 'ok', text = '线上已是最新';
   if (!last) { state = 'idle'; text = '没有发布记录'; }
-  else if (last.status !== 'completed') { state = 'warn'; text = '正在发布新版本'; }
+  else if (last.status !== 'completed') { const long = Date.now() - new Date(last.created_at) > 30 * 60000; state = long ? 'warn' : 'ok'; text = long ? `发布已经卡了 ${ago(last.created_at).replace('前', '')}` : '正在发布新版本'; }
   else if (BAD.includes(last.conclusion)) { state = 'bad'; text = '最近一次发布失败，线上还是旧版'; }
   else if (head && new Date(last.created_at) < new Date(head.date) - 60e3) {
     const mins = (Date.now() - new Date(head.date)) / 60000;
@@ -450,8 +459,8 @@ function render(){
   const updated = apps.filter(a => a.V.humanWeek > 0).length, pending = apps.filter(a => a.V.state !== 'ok' && a.V.state !== 'idle').length;
   const bk = data.backup;
   const P = {
-    run: {dot: worst('R'), big: `${runOk}/${apps.length}`, sub: ['个 App 正常', `今天失败 ${fails} 次`]},
-    ver: {dot: worst('V'), big: `${updated} 个`, sub: ['本周有更新', pending ? `${pending} 个没上线` : '都已上线']},
+    run: {dot: worst('R'), big: `${runOk}/${apps.length}`, sub: [`今天失败 ${fails} 次`, !fails ? '任务都跑成功了' : apps.some(a => a.R.state === 'bad') ? '还有没恢复的' : '都已恢复']},
+    ver: {dot: worst('V'), big: `${updated} 个`, sub: ['本周有功能更新', pending ? `${pending} 个没上线` : '线上都是最新']},
     bak: {dot: bk ? worst('B') : 'warn', big: bk ? md(bk.at) : '未备份', sub: bk ? [`${bk.count} 个仓库`, size(bk.total_bytes)] : ['每天 03:23', '自动快照']}
   };
   $('#pillars').innerHTML = Object.keys(VIEWS).map(k => `<button class="pillar" type="button" role="tab" data-view="${k}" aria-pressed="${k === view}"><span class="k"><i class="c-${P[k].dot}"></i>${VIEWS[k]}</span><b>${P[k].big}</b><span>${P[k].sub.map(x => `<em>${esc(x)}</em>`).join('')}</span></button>`).join('');
