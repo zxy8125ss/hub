@@ -37,7 +37,8 @@ async function one(repo) {
   const branch = repo.default_branch || 'main';
   const out = {
     repo: repo.name, key, title: meta.name || repo.name, desc: meta.desc || repo.description || '',
-    url: repo.has_pages || !repo.homepage ? pagesUrl : repo.homepage, pushed_at: repo.pushed_at, size_kb: repo.size,
+    url: repo.has_pages || !repo.homepage ? pagesUrl : repo.homepage, pushed_at: repo.pushed_at, created_at: repo.created_at, size_kb: repo.size,
+    about: meta.about || repo.description || '',
     maxGap: meta.maxGap || null, adapter: meta.adapter || null, phone: meta.phone || {kind: 'unknown', text: '还没登记这个 App 的本机数据情况'},
     deployIgnoreBot: !!meta.deployIgnoreBot, errors: []
   };

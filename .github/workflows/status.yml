@@ -7,7 +7,7 @@ on:
     types: [completed]
   push:
     branches: [main]
-    paths: ['apps.json', 'scripts/status.mjs', '.github/workflows/status.yml']
+    paths: ['apps.json', 'scripts/status.mjs', 'scripts/excel.py', '.github/workflows/status.yml']
   workflow_dispatch:
 permissions:
   contents: write
@@ -31,10 +31,14 @@ jobs:
           mkdir -p out
           node scripts/status.mjs > out/status.json
           node -e "const s=require('./out/status.json');console.log(s.apps.length+' 个 App，剩余查询 '+s.rate_left)"
+      - name: 生成 App 总览 Excel
+        run: |
+          pip install -q openpyxl
+          python3 scripts/excel.py out/status.json "out/App总览.xlsx"
       - name: 发布到 status 分支
         run: |
           cd out
           git init -q -b status
-          git add status.json
+          git add status.json App总览.xlsx
           git -c user.name=github-actions[bot] -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -q -m "状态 $(TZ=Asia/Shanghai date '+%m-%d %H:%M')"
           git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" status
