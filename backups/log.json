@@ -1,6 +1,135 @@
 {
  "entries": [
   {
+   "date": "2026-11-04",
+   "at": "2026-11-04T08:01+08:00",
+   "tag": "backup-2026-11-04",
+   "total_bytes": 18479604,
+   "all_url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/all.zip",
+   "apps": {
+    "crosscheck": {
+     "sha": "89f637e",
+     "files": 100,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 1407367,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/crosscheck.zip"
+    },
+    "ease": {
+     "sha": "f0668b6",
+     "files": 22,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 123663,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/ease.zip"
+    },
+    "Forge": {
+     "sha": "99f7b9e",
+     "files": 68,
+     "skipped": 54,
+     "skipped_bytes": 340195812,
+     "bytes": 3442176,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/Forge.zip"
+    },
+    "Fund-diary": {
+     "sha": "cc0a21e",
+     "files": 432,
+     "skipped": 1,
+     "skipped_bytes": 18827746,
+     "bytes": 1401461,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/Fund-diary.zip"
+    },
+    "Game-On": {
+     "sha": "786f8fc",
+     "files": 17,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 138701,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/Game-On.zip"
+    },
+    "game-on-rebuild": {
+     "sha": "c4671f6",
+     "files": 29,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 246663,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/game-on-rebuild.zip"
+    },
+    "gewu": {
+     "sha": "49f9a47",
+     "files": 12,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 198095,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/gewu.zip"
+    },
+    "gomoku": {
+     "sha": "731cf2c",
+     "files": 23,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 297497,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/gomoku.zip"
+    },
+    "hub": {
+     "sha": "aa58d3f",
+     "files": 15,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 50088,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/hub.zip"
+    },
+    "leader-party-newchina": {
+     "sha": "e38d70e",
+     "files": 53,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 1016844,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/leader-party-newchina.zip"
+    },
+    "life-radar": {
+     "sha": "3a33b65",
+     "files": 22,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 252873,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/life-radar.zip"
+    },
+    "meal-compass": {
+     "sha": "a2a3ef4",
+     "files": 30,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 66448,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/meal-compass.zip"
+    },
+    "Yaya": {
+     "sha": "ea4269e",
+     "files": 10,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 44086,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/Yaya.zip"
+    },
+    "yiwei": {
+     "sha": "e5e9a74",
+     "files": 65,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 1774335,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/yiwei.zip"
+    },
+    "zuoyou": {
+     "sha": "77b1fda",
+     "files": 160,
+     "skipped": 0,
+     "skipped_bytes": 0,
+     "bytes": 8017781,
+     "url": "https://github.com/zxy8125ss/hub/releases/download/backup-2026-11-04/zuoyou.zip"
+    }
+   }
+  },
+  {
    "date": "2026-11-03",
    "at": "2026-11-03T09:40+08:00",
    "tag": "backup-2026-11-03",
